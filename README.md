@@ -3,3 +3,6 @@
 
 ### Warning
 This don't work yet lol
+
+#### Credits
+I copied and pasted a bunch of code from [this repo](https://github.com/OneLoneCoder/Javidx9/tree/master/ConsoleGameEngine/BiggerProjects/Engine3D) by OneLoneCoder. Please check it out!
