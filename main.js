@@ -5,7 +5,11 @@ var calculator = Desmos.GraphingCalculator(elt);
 //other vars lol
 const maxTriangles = 64; //increasing this will slow the calculator down (a lot)
 const ScreenHeight = 18.0;
-const ScreenWidth = 20.0
+const ScreenWidth = 20.0;
+const FrameDelay = 0.5; //seconds
+
+//render vars
+var ElapsedTime = 0.0;
 
 class mat4x4
 {
@@ -29,7 +33,7 @@ class triangle
 {
     constructor(p1 = new vector3(), p2 = new vector3(), p3 = new vector3())
     {
-        this.p = [p1,  p2, p3]
+        this.p = [p1,  p2, p3];
     }
 }
 
@@ -46,7 +50,7 @@ var fNear = 0.1;
 var fFar = 1000.0;
 var fFov = 90.0;
 var fAspectRatio = ScreenHeight / ScreenWidth;
-var fFovRad = 1.0 / Math.tan(fFov * 0.5 / 180.0 * Math.PI)
+var fFovRad = 1.0 / Math.tan(fFov * 0.5 / 180.0 * Math.PI);
 
 matProj = new mat4x4();
 
@@ -135,7 +139,32 @@ function GetTriangle(p1, p2, p3)
 
 Initialize();
 
+//main loop
 setInterval(function() {
+    //update variables
+    ElapsedTime += FrameDelay;
+    TimeScale = 0.1;
+
+    //render
+    matRotZ = new mat4x4();
+    matRotX = new mat4x4();
+
+	//rotation Z
+	matRotZ.m[0][0] = Math.cos(ElapsedTime * TimeScale);
+	matRotZ.m[0][1] = Math.sin(ElapsedTime * TimeScale);
+	matRotZ.m[1][0] = -Math.sin(ElapsedTime * TimeScale);
+	matRotZ.m[1][1] = Math.cos(ElapsedTime * TimeScale);
+	matRotZ.m[2][2] = 1;
+	matRotZ.m[3][3] = 1;
+
+	//rotation X
+	matRotX.m[0][0] = 1;
+	matRotX.m[1][1] = Math.cos(ElapsedTime * 0.5 * TimeScale);
+	matRotX.m[1][2] = Math.sin(ElapsedTime * 0.5 * TimeScale);
+	matRotX.m[2][1] = -Math.sin(ElapsedTime * 0.5 * TimeScale);
+	matRotX.m[2][2] = Math.cos(ElapsedTime * 0.5 * TimeScale);
+	matRotX.m[3][3] = 1;
+
     for(let i = 0; i < meshCube.tris.length; i++)
     {
         //a bunch of triangles that will be used for each transformation/projection
@@ -145,16 +174,27 @@ setInterval(function() {
         triRotatedZ = new triangle();
         triRotatedZX = new triangle();
 
-        //translate it forward
-        triTranslated = tri;
-        triTranslated.p[0].z = tri.p[0].z + 3.0;
-        triTranslated.p[1].z = tri.p[1].z + 3.0;
-        triTranslated.p[2].z = tri.p[2].z + 3.0;
+        //rotate z
+		triRotatedZ.p[0] = MultiplyMatrixVector(tri.p[0], matRotZ);
+		triRotatedZ.p[1] = MultiplyMatrixVector(tri.p[1], matRotZ);
+		triRotatedZ.p[2] = MultiplyMatrixVector(tri.p[2], matRotZ);
+
+		//rotate x
+        triRotatedZX = JSON.parse(JSON.stringify(triRotatedZ));
+		triRotatedZX.p[0] = MultiplyMatrixVector(triRotatedZ.p[0], matRotX);
+		triRotatedZX.p[1] = MultiplyMatrixVector(triRotatedZ.p[1], matRotX);
+		triRotatedZX.p[2] = MultiplyMatrixVector(triRotatedZ.p[2], matRotX);
+
+        //translate forward
+        triTranslated = triRotatedZX;
+        triTranslated.p[0].z = triRotatedZX.p[0].z + 3.0;
+        triTranslated.p[1].z = triRotatedZX.p[1].z + 3.0;
+        triTranslated.p[2].z = triRotatedZX.p[2].z + 3.0;
 
         //project
-        triProjected.p[0] = MultiplyMatrixVector(tri.p[0], matProj);
-        triProjected.p[1] = MultiplyMatrixVector(tri.p[1], matProj);
-        triProjected.p[2] = MultiplyMatrixVector(tri.p[2], matProj);
+        triProjected.p[0] = MultiplyMatrixVector(triRotatedZX.p[0], matProj);
+        triProjected.p[1] = MultiplyMatrixVector(triRotatedZX.p[1], matProj);
+        triProjected.p[2] = MultiplyMatrixVector(triRotatedZX.p[2], matProj);
 
         //bring the cube into the screen
         triProjected.p[0].x += 1.0; triProjected.p[0].y += 1.0;
@@ -166,10 +206,10 @@ setInterval(function() {
 	    triProjected.p[1].y *= 0.5 * ScreenHeight;
 	    triProjected.p[2].x *= 0.5 * ScreenWidth;
 	    triProjected.p[2].y *= 0.5 * ScreenHeight;
-    
-        console.log(meshCube)
-
+        
+        console.log(triRotatedZX);
+        
         //Draw the thing
         calculator.setExpression({id: i.toString(), latex: GetTriangleLatex(triProjected.p[0].x, triProjected.p[0].y, triProjected.p[1].x, triProjected.p[1].y, triProjected.p[2].x, triProjected.p[2].y), color: '#FF0000'});
     }
-}, 500); // Wait 1000ms before running again
+}, FrameDelay * 0.001);
