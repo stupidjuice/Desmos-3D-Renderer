@@ -6,7 +6,7 @@ var calculator = Desmos.GraphingCalculator(elt);
 const maxTriangles = 64; //increasing this will slow the calculator down (a lot)
 const ScreenHeight = 18.0;
 const ScreenWidth = 20.0;
-const FrameDelay = 0.5; //seconds
+const FrameDelay = 0.01; //seconds
 
 //render vars
 var ElapsedTime = 0.0;
@@ -143,7 +143,8 @@ Initialize();
 setInterval(function() {
     //update variables
     ElapsedTime += FrameDelay;
-    TimeScale = 0.1;
+    TimeScale = 1;
+    console.log(ElapsedTime)
 
     //render
     matRotZ = new mat4x4();
@@ -207,9 +208,7 @@ setInterval(function() {
 	    triProjected.p[2].x *= 0.5 * ScreenWidth;
 	    triProjected.p[2].y *= 0.5 * ScreenHeight;
         
-        console.log(triRotatedZX);
-        
         //Draw the thing
         calculator.setExpression({id: i.toString(), latex: GetTriangleLatex(triProjected.p[0].x, triProjected.p[0].y, triProjected.p[1].x, triProjected.p[1].y, triProjected.p[2].x, triProjected.p[2].y), color: '#FF0000'});
     }
-}, FrameDelay * 0.001);
+}, FrameDelay * 1000);
