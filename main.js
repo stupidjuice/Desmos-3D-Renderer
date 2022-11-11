@@ -59,7 +59,6 @@ matProj.m[3][3] = 0.0;
 
 //cube:
 meshCube = new mesh();
-console.log(meshCube)
 
 //south
 meshCube.tris.push(GetTriangle([0.0, 0.0, 0.0], [0.0, 1.0, 0.0], [1.0, 1.0, 0.0]));
@@ -135,34 +134,42 @@ function GetTriangle(p1, p2, p3)
 //---------------------------------------ACTUAL RENDERING CODE---------------------------------------
 
 Initialize();
-calculator.setExpression({id: '0', latex: GetTriangleLatex(5, 3, 2, 3, 5, 10), color: '#FF0000'});
 
-for(let i = 0; i < meshCube.tris.length; i++)
-{
-    tri = meshCube.tris[i];
-    triTranslated = new triangle();
-    triProjected = new triangle();
-    triRotatedZ = new triangle();
-    triRotatedZX = new triangle();
+setInterval(function() {
+    for(let i = 0; i < meshCube.tris.length; i++)
+    {
+        //a bunch of triangles that will be used for each transformation/projection
+        tri = JSON.parse(JSON.stringify(meshCube.tris[i]));
+        triTranslated = new triangle();
+        triProjected = new triangle();
+        triRotatedZ = new triangle();
+        triRotatedZX = new triangle();
 
-    triTranslated = tri
-    triTranslated.p[0].z = tri.p[0].z + 3.0;
-    triTranslated.p[1].z = tri.p[1].z + 3.0;
-    triTranslated.p[2].z = tri.p[2].z + 3.0;
+        //translate it forward
+        triTranslated = tri;
+        triTranslated.p[0].z = tri.p[0].z + 3.0;
+        triTranslated.p[1].z = tri.p[1].z + 3.0;
+        triTranslated.p[2].z = tri.p[2].z + 3.0;
 
-    triProjected.p[0] = MultiplyMatrixVector(tri.p[0], matProj);
-    triProjected.p[1] = MultiplyMatrixVector(tri.p[1], matProj);
-    triProjected.p[2] = MultiplyMatrixVector(tri.p[2], matProj);
+        //project
+        triProjected.p[0] = MultiplyMatrixVector(tri.p[0], matProj);
+        triProjected.p[1] = MultiplyMatrixVector(tri.p[1], matProj);
+        triProjected.p[2] = MultiplyMatrixVector(tri.p[2], matProj);
 
-    triProjected.p[0].x += 1.0; triProjected.p[0].y += 1.0;
-	triProjected.p[1].x += 1.0; triProjected.p[1].y += 1.0;
-	triProjected.p[2].x += 1.0; triProjected.p[2].y += 1.0;
-	triProjected.p[0].x *= 0.5 * ScreenWidth;
-	triProjected.p[0].y *= 0.5 * ScreenHeight;
-	triProjected.p[1].x *= 0.5 * ScreenWidth;
-	triProjected.p[1].y *= 0.5 * ScreenHeight;
-	triProjected.p[2].x *= 0.5 * ScreenWidth;
-	triProjected.p[2].y *= 0.5 * ScreenHeight;
+        //bring the cube into the screen
+        triProjected.p[0].x += 1.0; triProjected.p[0].y += 1.0;
+	    triProjected.p[1].x += 1.0; triProjected.p[1].y += 1.0;
+	    triProjected.p[2].x += 1.0; triProjected.p[2].y += 1.0;
+	    triProjected.p[0].x *= 0.5 * ScreenWidth;
+	    triProjected.p[0].y *= 0.5 * ScreenHeight;
+	    triProjected.p[1].x *= 0.5 * ScreenWidth;
+	    triProjected.p[1].y *= 0.5 * ScreenHeight;
+	    triProjected.p[2].x *= 0.5 * ScreenWidth;
+	    triProjected.p[2].y *= 0.5 * ScreenHeight;
     
-    calculator.setExpression({id: i.toString(), latex: GetTriangleLatex(triProjected.p[0].x, triProjected.p[0].y, triProjected.p[1].x, triProjected.p[1].y, triProjected.p[2].x, triProjected.p[2].y), color: '#FF0000'});
-}
+        console.log(meshCube)
+
+        //Draw the thing
+        calculator.setExpression({id: i.toString(), latex: GetTriangleLatex(triProjected.p[0].x, triProjected.p[0].y, triProjected.p[1].x, triProjected.p[1].y, triProjected.p[2].x, triProjected.p[2].y), color: '#FF0000'});
+    }
+}, 500); // Wait 1000ms before running again
