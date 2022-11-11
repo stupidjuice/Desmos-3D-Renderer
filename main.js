@@ -23,6 +23,27 @@ function Initialize()
     }
 }
 
+/**
+ * 
+ * @param {vector3} i vector3 to be multiplied
+ * @param {vector3} o vector3 output
+ * @param {mat4x4} m matrix to be multiplied
+ */
+ function MultiplyMatrixVector(i, o, m)
+ {
+    temp = new vector3();
+    temp.x = i.x * m.m[0][0] + i.y * m.m[1][0] + i.z * m.m[2][0] + m.m[3][0];
+	temp.y = i.x * m.m[0][1] + i.y * m.m[1][1] + i.z * m.m[2][1] + m.m[3][1];
+	temp.z = i.x * m.m[0][2] + i.y * m.m[1][2] + i.z * m.m[2][2] + m.m[3][2];
+	w = i.x * m.m[0][3] + i.y * m.m[1][3] + i.z * m.m[2][3] + m.m[3][3];
+
+	if (w != 0.0)
+	{
+		temp.x /= w; o.y /= w; o.z /= w;
+	}
+    return temp;
+ }
+
 class mat4x4
 {
     constructor()
