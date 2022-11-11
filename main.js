@@ -99,7 +99,7 @@ function Initialize()
 {
     for(let i = 0; i < maxTriangles; i++)
     {
-        calculator.setExpression({id: i.toString(), latex: '(-10, 0)'});    
+        calculator.setExpression({id: i.toString(), latex: '(-10, 0)', color:'#000000'});    
     }
 }
 
@@ -138,6 +138,7 @@ function GetTriangle(p1, p2, p3)
 //---------------------------------------ACTUAL RENDERING CODE---------------------------------------
 
 Initialize();
+vCamera = new vector3()
 
 //main loop
 setInterval(function() {
@@ -192,23 +193,53 @@ setInterval(function() {
         triTranslated.p[1].z = triRotatedZX.p[1].z + 3.0;
         triTranslated.p[2].z = triRotatedZX.p[2].z + 3.0;
 
-        //project
-        triProjected.p[0] = MultiplyMatrixVector(triRotatedZX.p[0], matProj);
-        triProjected.p[1] = MultiplyMatrixVector(triRotatedZX.p[1], matProj);
-        triProjected.p[2] = MultiplyMatrixVector(triRotatedZX.p[2], matProj);
+        //get normal using some weird math wizardry (wtf is a cross product?????)
+        normal = new vector3();
+        line1 = new vector3();
+        line2 = new vector3();
 
-        //bring the cube into the screen
-        triProjected.p[0].x += 1.0; triProjected.p[0].y += 1.0;
-	    triProjected.p[1].x += 1.0; triProjected.p[1].y += 1.0;
-	    triProjected.p[2].x += 1.0; triProjected.p[2].y += 1.0;
-	    triProjected.p[0].x *= 0.5 * ScreenWidth;
-	    triProjected.p[0].y *= 0.5 * ScreenHeight;
-	    triProjected.p[1].x *= 0.5 * ScreenWidth;
-	    triProjected.p[1].y *= 0.5 * ScreenHeight;
-	    triProjected.p[2].x *= 0.5 * ScreenWidth;
-	    triProjected.p[2].y *= 0.5 * ScreenHeight;
+        line1.x = triTranslated.p[1].x - triTranslated.p[0].x;
+		line1.y = triTranslated.p[1].y - triTranslated.p[0].y;
+		line1.z = triTranslated.p[1].z - triTranslated.p[0].z;
+
+		line2.x = triTranslated.p[2].x - triTranslated.p[0].x;
+		line2.y = triTranslated.p[2].y - triTranslated.p[0].y;
+		line2.z = triTranslated.p[2].z - triTranslated.p[0].z;
+
+        normal.x = line1.y * line2.z - line1.z * line2.y;
+		normal.y = line1.z * line2.x - line1.x * line2.z;
+		normal.z = line1.x * line2.y - line1.y * line2.x;
+
+        //normalize normal (hehe)
+        len = Math.sqrt(normal.x * normal.x  +  normal.y * normal.y  +  normal.z * normal.z);
+		normal.x /= len; normal.y /= len; normal.z /= len;
+
+        //only project and draw triangle if it is facing camera
+        //otherwise, set the expression to be a point at (0, -10)
+        if(normal.x * (triTranslated.p[0].x - vCamera.x) + normal.y * (triTranslated.p[0].y - vCamera.y) + normal.z * (triTranslated.p[0].z - vCamera.z) < 0.0)
+		{
+            //project
+            triProjected.p[0] = MultiplyMatrixVector(triRotatedZX.p[0], matProj);
+            triProjected.p[1] = MultiplyMatrixVector(triRotatedZX.p[1], matProj);
+            triProjected.p[2] = MultiplyMatrixVector(triRotatedZX.p[2], matProj);
+
+            //bring the cube into the screen
+            triProjected.p[0].x += 1.0; triProjected.p[0].y += 1.0;
+	        triProjected.p[1].x += 1.0; triProjected.p[1].y += 1.0;
+	        triProjected.p[2].x += 1.0; triProjected.p[2].y += 1.0;
+	        triProjected.p[0].x *= 0.5 * ScreenWidth;
+	        triProjected.p[0].y *= 0.5 * ScreenHeight;
+	        triProjected.p[1].x *= 0.5 * ScreenWidth;
+	        triProjected.p[1].y *= 0.5 * ScreenHeight;
+	        triProjected.p[2].x *= 0.5 * ScreenWidth;
+	        triProjected.p[2].y *= 0.5 * ScreenHeight;
         
-        //Draw the thing
-        calculator.setExpression({id: i.toString(), latex: GetTriangleLatex(triProjected.p[0].x, triProjected.p[0].y, triProjected.p[1].x, triProjected.p[1].y, triProjected.p[2].x, triProjected.p[2].y), color: '#FF0000'});
+            //Draw the thing
+            calculator.setExpression({id: i.toString(), latex: GetTriangleLatex(triProjected.p[0].x, triProjected.p[0].y, triProjected.p[1].x, triProjected.p[1].y, triProjected.p[2].x, triProjected.p[2].y), color: '#FF0000'});
+        }
+        else
+        {
+            calculator.setExpression({id: i.toString(), latex: '(-10, 0)', color:'#000000'}); 
+        }
     }
 }, FrameDelay * 1000);
