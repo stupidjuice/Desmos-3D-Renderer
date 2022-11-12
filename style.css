@@ -1,0 +1,30 @@
+@font-face 
+{
+    font-family: PressStart2P;
+    src: url(PressStart2P-Regular.ttf);
+}
+
+.toptext 
+{
+    font-size: xx-large;
+    font-family: PressStart2P, Helvetica, sans-serif;
+    text-align: center;
+}
+
+.githublink
+{
+    font-family: PressStart2P, Helvetica, sans-serif;
+    font-size: medium;
+    text-align: center;
+    
+}
+
+.calculator
+{
+    width: 1536px; 
+    height: 1024px; 
+    margin-left: auto; 
+    margin-right: auto; 
+    padding-top: 20px;
+    border: 5px solid black
+}

@@ -243,7 +243,7 @@ setInterval(function() {
 	        triProjected.p[2].y *= 0.5 * ScreenHeight;
         
             //Draw the thing
-            calculator.setExpression({id: i.toString(), latex: GetTriangleLatex(triProjected.p[0].x, triProjected.p[0].y, triProjected.p[1].x, triProjected.p[1].y, triProjected.p[2].x, triProjected.p[2].y), color: '#' + brightnessRGB, fillOpacity: 1});
+            calculator.setExpression({id: i.toString(), latex: GetTriangleLatex(triProjected.p[0].x, triProjected.p[0].y, triProjected.p[1].x, triProjected.p[1].y, triProjected.p[2].x, triProjected.p[2].y), color: '#' + brightnessRGB, fillOpacity: 1, lineWidth: 1});
         }
         else
         {
