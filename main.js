@@ -4,7 +4,7 @@ var calculator = Desmos.GraphingCalculator(elt);
 
 //other vars lol
 const maxTriangles = 64; //increasing this will slow the calculator down (a lot)
-const ScreenHeight = 18.0;
+const ScreenHeight = 20.0;
 const ScreenWidth = 20.0;
 const FrameDelay = 0.01; //seconds
 
@@ -34,6 +34,7 @@ class triangle
     constructor(p1 = new vector3(), p2 = new vector3(), p3 = new vector3())
     {
         this.p = [p1,  p2, p3];
+        this.col = '#FF0000';    
     }
 }
 
@@ -52,7 +53,7 @@ var fFov = 90.0;
 var fAspectRatio = ScreenHeight / ScreenWidth;
 var fFovRad = 1.0 / Math.tan(fFov * 0.5 / 180.0 * Math.PI);
 
-matProj = new mat4x4();
+var matProj = new mat4x4();
 
 matProj.m[0][0] = fAspectRatio * fFovRad;
 matProj.m[1][1] = fFovRad;
@@ -62,7 +63,7 @@ matProj.m[2][3] = 1.0;
 matProj.m[3][3] = 0.0;
 
 //cube:
-meshCube = new mesh();
+var meshCube = new mesh();
 
 //south
 meshCube.tris.push(GetTriangle([0.0, 0.0, 0.0], [0.0, 1.0, 0.0], [1.0, 1.0, 0.0]));
@@ -138,18 +139,20 @@ function GetTriangle(p1, p2, p3)
 //---------------------------------------ACTUAL RENDERING CODE---------------------------------------
 
 Initialize();
-vCamera = new vector3()
+var vCamera = new vector3()
+var light_direction = new vector3(0.0, 0.0, -1.0)
+let len = Math.sqrt(light_direction.x * light_direction.x + light_direction.y * light_direction.y + light_direction.z * light_direction.z);
+light_direction.x /= len; light_direction.y /= len; light_direction.z /= len;
 
 //main loop
 setInterval(function() {
     //update variables
     ElapsedTime += FrameDelay;
-    TimeScale = 1;
-    console.log(ElapsedTime)
+    let TimeScale = 1;
 
     //render
-    matRotZ = new mat4x4();
-    matRotX = new mat4x4();
+    var matRotZ = new mat4x4();
+    var matRotX = new mat4x4();
 
 	//rotation Z
 	matRotZ.m[0][0] = Math.cos(ElapsedTime * TimeScale);
@@ -170,11 +173,11 @@ setInterval(function() {
     for(let i = 0; i < meshCube.tris.length; i++)
     {
         //a bunch of triangles that will be used for each transformation/projection
-        tri = JSON.parse(JSON.stringify(meshCube.tris[i]));
-        triTranslated = new triangle();
-        triProjected = new triangle();
-        triRotatedZ = new triangle();
-        triRotatedZX = new triangle();
+        let tri = JSON.parse(JSON.stringify(meshCube.tris[i]));
+        let triTranslated = new triangle();
+        let triProjected = new triangle();
+        let triRotatedZ = new triangle();
+        let triRotatedZX = new triangle();
 
         //rotate z
 		triRotatedZ.p[0] = MultiplyMatrixVector(tri.p[0], matRotZ);
@@ -194,9 +197,9 @@ setInterval(function() {
         triTranslated.p[2].z = triRotatedZX.p[2].z + 3.0;
 
         //get normal using some weird math wizardry (wtf is a cross product?????)
-        normal = new vector3();
-        line1 = new vector3();
-        line2 = new vector3();
+        let normal = new vector3();
+        let line1 = new vector3();
+        let line2 = new vector3();
 
         line1.x = triTranslated.p[1].x - triTranslated.p[0].x;
 		line1.y = triTranslated.p[1].y - triTranslated.p[0].y;
@@ -211,13 +214,18 @@ setInterval(function() {
 		normal.z = line1.x * line2.y - line1.y * line2.x;
 
         //normalize normal (hehe)
-        len = Math.sqrt(normal.x * normal.x  +  normal.y * normal.y  +  normal.z * normal.z);
-		normal.x /= len; normal.y /= len; normal.z /= len;
+        let len = Math.sqrt(normal.x * normal.x  +  normal.y * normal.y  +  normal.z * normal.z);
+		normal.x /= len; normal.y /= len; normal.z /= len;  
 
         //only project and draw triangle if it is facing camera
         //otherwise, set the expression to be a point at (0, -10)
         if(normal.x * (triTranslated.p[0].x - vCamera.x) + normal.y * (triTranslated.p[0].y - vCamera.y) + normal.z * (triTranslated.p[0].z - vCamera.z) < 0.0)
 		{
+            //lighting
+            let brightness = Math.round((normal.x * light_direction.x + normal.y * light_direction.y + normal.z * light_direction.z) * 150);
+            let brightnessRGB = Math.min((brightness << 16) + (brightness << 8) + brightness, 16777215).toString(16)
+            console.log(brightnessRGB);
+
             //project
             triProjected.p[0] = MultiplyMatrixVector(triRotatedZX.p[0], matProj);
             triProjected.p[1] = MultiplyMatrixVector(triRotatedZX.p[1], matProj);
@@ -235,7 +243,7 @@ setInterval(function() {
 	        triProjected.p[2].y *= 0.5 * ScreenHeight;
         
             //Draw the thing
-            calculator.setExpression({id: i.toString(), latex: GetTriangleLatex(triProjected.p[0].x, triProjected.p[0].y, triProjected.p[1].x, triProjected.p[1].y, triProjected.p[2].x, triProjected.p[2].y), color: '#FF0000'});
+            calculator.setExpression({id: i.toString(), latex: GetTriangleLatex(triProjected.p[0].x, triProjected.p[0].y, triProjected.p[1].x, triProjected.p[1].y, triProjected.p[2].x, triProjected.p[2].y), color: '#' + brightnessRGB, fillOpacity: 1});
         }
         else
         {
