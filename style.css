@@ -1,7 +1,7 @@
 @font-face 
 {
     font-family: PressStart2P;
-    src: url(PressStart2P-Regular.ttf);
+    src: url(PressStart2P.ttf);
 }
 
 .toptext 
@@ -11,12 +11,11 @@
     text-align: center;
 }
 
-.githublink
+.smalltext
 {
     font-family: PressStart2P, Helvetica, sans-serif;
     font-size: medium;
     text-align: center;
-    
 }
 
 .calculator

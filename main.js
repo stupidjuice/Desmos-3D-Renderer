@@ -218,7 +218,6 @@ setInterval(function() {
 		normal.x /= len; normal.y /= len; normal.z /= len;  
 
         //only project and draw triangle if it is facing camera
-        //otherwise, set the expression to be a point at (0, -10)
         if(normal.x * (triTranslated.p[0].x - vCamera.x) + normal.y * (triTranslated.p[0].y - vCamera.y) + normal.z * (triTranslated.p[0].z - vCamera.z) < 0.0)
 		{
             //lighting
@@ -245,6 +244,7 @@ setInterval(function() {
             //Draw the thing
             calculator.setExpression({id: i.toString(), latex: GetTriangleLatex(triProjected.p[0].x, triProjected.p[0].y, triProjected.p[1].x, triProjected.p[1].y, triProjected.p[2].x, triProjected.p[2].y), color: '#' + brightnessRGB, fillOpacity: 1, lineWidth: 1});
         }
+        //if the face is not facing the camera, make it a black dot thats off the screen so its not in the way
         else
         {
             calculator.setExpression({id: i.toString(), latex: '(-10, 0)', color:'#000000'}); 
