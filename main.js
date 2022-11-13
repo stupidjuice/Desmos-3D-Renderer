@@ -96,10 +96,10 @@ function GetTriangleLatex(x1, y1, x2, y2, x3, y3)
     return '\\polygon((' + x1.toString() + ', ' + y1.toString() + '), (' + x2.toString() + ', ' + y2.toString() + '), (' + x3.toString() + ', ' + y3.toString() + '))';
 }
 
-//creates a bunch of points to use later
+//creates a bunch of points to use later    
 function Initialize()
 {
-    for(let i = 0; i < maxTriangles; i++)
+    for(let i = 0; i < maxTriangles << 1; i++)
     {
         calculator.setExpression({id: i.toString(), latex: '(-10, 0)', color:'#000000'});    
     }
@@ -145,6 +145,9 @@ var light_direction = new vector3(-1.0, 0.5, -1.0)
 let len = Math.sqrt(light_direction.x * light_direction.x + light_direction.y * light_direction.y + light_direction.z * light_direction.z);
 light_direction.x /= len; light_direction.y /= len; light_direction.z /= len;
 
+let numLabeledVerts = 0;
+let prevNumLabeledVerts = 0;
+
 //main loop
 setInterval(function() {
     //----HTML UPDATE----
@@ -152,7 +155,10 @@ setInterval(function() {
     document.getElementById('opacitytext').innerHTML = opacity.toString() + '%';
 
     let lineThickness = document.getElementById('linethick').value;
-    document.getElementById('linethicktext').innerHTML = lineThickness.toString() + " pixels"; 
+    document.getElementById('linethicktext').innerHTML = lineThickness.toString() + ' pixels'; 
+
+    let labelVerts = document.getElementById('labelverts').checked;
+    let labeledCoords = [];
 
     //----RENDER----
     //update variables
@@ -231,13 +237,13 @@ setInterval(function() {
 		{
             //lighting
             let brightness = Math.round((normal.x * light_direction.x + normal.y * light_direction.y + normal.z * light_direction.z) * 150 + minBrightness);
-            let brightnessRGB = Math.min((brightness << 16) + (brightness << 8) + brightness, 16777215).toString(16)
+            let brightnessRGB = Math.min((brightness << 16) + (brightness << 8) + brightness, 16777215).toString(16);
 
             //project
             triProjected.p[0] = MultiplyMatrixVector(triRotatedZX.p[0], matProj);
             triProjected.p[1] = MultiplyMatrixVector(triRotatedZX.p[1], matProj);
             triProjected.p[2] = MultiplyMatrixVector(triRotatedZX.p[2], matProj);
-
+            
             //bring the cube into the screen
             triProjected.p[0].x += 1.0; triProjected.p[0].y += 1.0;
 	        triProjected.p[1].x += 1.0; triProjected.p[1].y += 1.0;
@@ -248,6 +254,13 @@ setInterval(function() {
 	        triProjected.p[1].y *= 0.5 * ScreenHeight;
 	        triProjected.p[2].x *= 0.5 * ScreenWidth;
 	        triProjected.p[2].y *= 0.5 * ScreenHeight;
+
+            if(labelVerts)
+            {
+                labeledCoords.push('(' + triProjected.p[0].x.toString() + ', ' + triProjected.p[0].y.toString() + ')');
+                labeledCoords.push('(' + triProjected.p[1].x.toString() + ', ' + triProjected.p[1].y.toString() + ')');
+                labeledCoords.push('(' + triProjected.p[2].x.toString() + ', ' + triProjected.p[2].y.toString() + ')');
+            }
         
             //Draw the thing
             calculator.setExpression({id: i.toString(), latex: GetTriangleLatex(triProjected.p[0].x, triProjected.p[0].y, triProjected.p[1].x, triProjected.p[1].y, triProjected.p[2].x, triProjected.p[2].y), color: '#' + brightnessRGB, fillOpacity: opacity/100, lineWidth: lineThickness});
@@ -258,4 +271,35 @@ setInterval(function() {
             calculator.setExpression({id: i.toString(), latex: '(-10, 0)', color:'#000000'}); 
         }
     }
+    if(labelVerts)
+    {
+        let uniqueCoords = [...new Set(labeledCoords)];
+        numLabeledVerts = uniqueCoords.length;
+
+        for(let i = 0; i < numLabeledVerts; i++)
+        {
+            if(i < uniqueCoords.length)
+            {
+                calculator.setExpression({id: (i+maxTriangles).toString(), latex: uniqueCoords[i], showLabel: true});
+            }
+        }
+        if(prevNumLabeledVerts - numLabeledVerts > 0)
+        {
+            for(let i = 0; i < prevNumLabeledVerts - numLabeledVerts; i++)
+            {
+                calculator.setExpression({id: (i+maxTriangles+numLabeledVerts).toString(), latex: '(-10, 0)', color:'#000000'});
+            }
+        }
+        console.log(numLabeledVerts - prevNumLabeledVerts);
+        prevNumLabeledVerts = numLabeledVerts;
+    }
+    else
+    {
+        for(let i = 0; i < numLabeledVerts; i++)
+        {
+            calculator.setExpression({id: (i+maxTriangles).toString(), latex: '(-10, 0)', color:'#000000'});
+        }
+        numLabeledVerts = 0;
+    }
+    
 }, FrameDelay * 1000);
