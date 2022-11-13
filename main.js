@@ -10,6 +10,7 @@ const FrameDelay = 0.01; //seconds
 
 //render vars
 var ElapsedTime = 0.0;
+const minBrightness = 10;
 
 class mat4x4
 {
@@ -140,12 +141,18 @@ function GetTriangle(p1, p2, p3)
 
 Initialize();
 var vCamera = new vector3()
-var light_direction = new vector3(0.0, 0.0, -1.0)
+var light_direction = new vector3(-1.0, 0.5, -1.0)
 let len = Math.sqrt(light_direction.x * light_direction.x + light_direction.y * light_direction.y + light_direction.z * light_direction.z);
 light_direction.x /= len; light_direction.y /= len; light_direction.z /= len;
 
 //main loop
 setInterval(function() {
+    //----HTML UPDATE----
+    opacity = document.getElementById("opacity").value;
+    document.getElementById("opacitytext").innerHTML = opacity.toString() + "%";
+    console.log(opacity);
+
+    //----RENDER----
     //update variables
     ElapsedTime += FrameDelay;
     let TimeScale = 1;
@@ -221,9 +228,8 @@ setInterval(function() {
         if(normal.x * (triTranslated.p[0].x - vCamera.x) + normal.y * (triTranslated.p[0].y - vCamera.y) + normal.z * (triTranslated.p[0].z - vCamera.z) < 0.0)
 		{
             //lighting
-            let brightness = Math.round((normal.x * light_direction.x + normal.y * light_direction.y + normal.z * light_direction.z) * 150);
+            let brightness = Math.round((normal.x * light_direction.x + normal.y * light_direction.y + normal.z * light_direction.z) * 150 + minBrightness);
             let brightnessRGB = Math.min((brightness << 16) + (brightness << 8) + brightness, 16777215).toString(16)
-            console.log(brightnessRGB);
 
             //project
             triProjected.p[0] = MultiplyMatrixVector(triRotatedZX.p[0], matProj);
@@ -242,7 +248,7 @@ setInterval(function() {
 	        triProjected.p[2].y *= 0.5 * ScreenHeight;
         
             //Draw the thing
-            calculator.setExpression({id: i.toString(), latex: GetTriangleLatex(triProjected.p[0].x, triProjected.p[0].y, triProjected.p[1].x, triProjected.p[1].y, triProjected.p[2].x, triProjected.p[2].y), color: '#' + brightnessRGB, fillOpacity: 1, lineWidth: 1});
+            calculator.setExpression({id: i.toString(), latex: GetTriangleLatex(triProjected.p[0].x, triProjected.p[0].y, triProjected.p[1].x, triProjected.p[1].y, triProjected.p[2].x, triProjected.p[2].y), color: '#' + brightnessRGB, fillOpacity: opacity/100, lineWidth: 1});
         }
         //if the face is not facing the camera, make it a black dot thats off the screen so its not in the way
         else

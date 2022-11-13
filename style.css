@@ -28,3 +28,21 @@
     border-right-width: 7px;
     border-bottom-width: 7px;
 }
+
+.options
+{
+    font-family: PressStart2P, Arial, Helvetica, sans-serif;
+    font-size: x-large;
+    text-align: left;
+    position: relative;
+    left: calc(50% - 768px);
+}
+
+.option
+{
+    font-family: PressStart2P, Arial, Helvetica, sans-serif;
+    font-size: large;
+    text-align: left;
+    position: relative;
+    left: calc(50% - 700px);
+}
