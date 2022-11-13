@@ -148,9 +148,11 @@ light_direction.x /= len; light_direction.y /= len; light_direction.z /= len;
 //main loop
 setInterval(function() {
     //----HTML UPDATE----
-    opacity = document.getElementById("opacity").value;
-    document.getElementById("opacitytext").innerHTML = opacity.toString() + "%";
-    console.log(opacity);
+    let opacity = document.getElementById('opacity').value;
+    document.getElementById('opacitytext').innerHTML = opacity.toString() + '%';
+
+    let lineThickness = document.getElementById('linethick').value;
+    document.getElementById('linethicktext').innerHTML = lineThickness.toString() + " pixels"; 
 
     //----RENDER----
     //update variables
@@ -248,7 +250,7 @@ setInterval(function() {
 	        triProjected.p[2].y *= 0.5 * ScreenHeight;
         
             //Draw the thing
-            calculator.setExpression({id: i.toString(), latex: GetTriangleLatex(triProjected.p[0].x, triProjected.p[0].y, triProjected.p[1].x, triProjected.p[1].y, triProjected.p[2].x, triProjected.p[2].y), color: '#' + brightnessRGB, fillOpacity: opacity/100, lineWidth: 1});
+            calculator.setExpression({id: i.toString(), latex: GetTriangleLatex(triProjected.p[0].x, triProjected.p[0].y, triProjected.p[1].x, triProjected.p[1].y, triProjected.p[2].x, triProjected.p[2].y), color: '#' + brightnessRGB, fillOpacity: opacity/100, lineWidth: lineThickness});
         }
         //if the face is not facing the camera, make it a black dot thats off the screen so its not in the way
         else
