@@ -65,7 +65,10 @@ matProj.m[3][3] = 0.0;
 
 //cube:
 var meshCube = new mesh();
+let meshcubeobj = "# Blender v3.0.1 OBJ File: ''\n# www.blender.org\nmtllib model.mtl\no Cube\nv 1.000000 1.000000 -1.000000\nv 1.000000 -1.000000 -1.000000\nv 1.000000 1.000000 1.000000\nv 1.000000 -1.000000 1.000000\nv -1.000000 1.000000 -1.000000\nv -1.000000 -1.000000 -1.000000\nv -1.000000 1.000000 1.000000\nv -1.000000 -1.000000 1.000000\nf 5 3 1\nf 3 8 4\nf 7 6 8\nf 2 8 6\nf 1 4 2\nf 5 2 6\nf 5 7 3\nf 3 7 8\nf 7 5 6\nf 2 4 8\nf 1 3 4\nf 5 1 2";
 
+
+/*
 //south
 meshCube.tris.push(GetTriangle([0.0, 0.0, 0.0], [0.0, 1.0, 0.0], [1.0, 1.0, 0.0]));
 meshCube.tris.push(GetTriangle([0.0, 0.0, 0.0], [1.0, 1.0, 0.0], [1.0, 0.0, 0.0]));
@@ -89,6 +92,10 @@ meshCube.tris.push(GetTriangle([0.0, 1.0, 0.0], [1.0, 1.0, 1.0], [1.0, 1.0, 0.0]
 //bottom
 meshCube.tris.push(GetTriangle([1.0, 0.0, 1.0], [0.0, 0.0, 1.0], [0.0, 0.0, 0.0]));
 meshCube.tris.push(GetTriangle([1.0, 0.0, 1.0], [0.0, 0.0, 0.0], [1.0, 0.0, 0.0]));
+*/
+
+meshCube = GetMeshFromOBJ(meshcubeobj);
+console.log(meshCube);
 
 //returns latex of a triangle
 function GetTriangleLatex(x1, y1, x2, y2, x3, y3)
@@ -137,11 +144,39 @@ function GetTriangle(p1, p2, p3)
     return new triangle(new vector3(p1[0], p1[1], p1[2]), new vector3(p2[0], p2[1], p2[2]), new vector3(p3[0], p3[1], p3[2]));
 }
 
-//---------------------------------------ACTUAL RENDERING CODE---------------------------------------
+/**
+ * @param {string} objStr
+ */
+function GetMeshFromOBJ(objStr)
+{
+    let objArray = objStr.split('\n');
+    let verts = [];
+    let faces = [];
+    let returnmesh = new mesh();
 
+    for(let i = 0; i < objArray.length; i++)
+    {
+        let objLine = objArray[i].split(' ')
+        if(objLine[0] == 'v')
+        {
+            verts.push([objLine[1], objLine[2], objLine[3]]);
+        }
+        else if (objLine[0] == 'f')
+        {
+            console.log(verts[objLine[2]])
+            faces.push(GetTriangle(verts[objLine[1] - 1], verts[objLine[2] - 1], verts[objLine[3] - 1]));
+        }
+    }
+
+    returnmesh.tris = faces;
+    return returnmesh;
+}
+
+//---------------------------------------ACTUAL RENDERING CODE---------------------------------------
 Initialize();
 var vCamera = new vector3()
 var light_direction = new vector3(-1.0, 0.5, -1.0)
+//normalize light direction (or else the lighting will be extremely overdone)
 let len = Math.sqrt(light_direction.x * light_direction.x + light_direction.y * light_direction.y + light_direction.z * light_direction.z);
 light_direction.x /= len; light_direction.y /= len; light_direction.z /= len;
 
@@ -165,7 +200,6 @@ setInterval(function() {
     ElapsedTime += FrameDelay;
     let TimeScale = 1;
 
-    //render
     var matRotZ = new mat4x4();
     var matRotX = new mat4x4();
 
@@ -205,7 +239,7 @@ setInterval(function() {
 		triRotatedZX.p[1] = MultiplyMatrixVector(triRotatedZ.p[1], matRotX);
 		triRotatedZX.p[2] = MultiplyMatrixVector(triRotatedZ.p[2], matRotX);
 
-        //translate forward
+        //translate forward away from camera
         triTranslated = triRotatedZX;
         triTranslated.p[0].z = triRotatedZX.p[0].z + 3.0;
         triTranslated.p[1].z = triRotatedZX.p[1].z + 3.0;
@@ -255,6 +289,7 @@ setInterval(function() {
 	        triProjected.p[2].x *= 0.5 * ScreenWidth;
 	        triProjected.p[2].y *= 0.5 * ScreenHeight;
 
+            //if the label vertices button is pressed, add the triangles' points to this array
             if(labelVerts)
             {
                 labeledCoords.push('(' + triProjected.p[0].x.toString() + ', ' + triProjected.p[0].y.toString() + ')');
@@ -273,6 +308,7 @@ setInterval(function() {
     }
     if(labelVerts)
     {
+        //use this hack to remove duplicates from the array of vertices
         let uniqueCoords = [...new Set(labeledCoords)];
         numLabeledVerts = uniqueCoords.length;
 
@@ -283,6 +319,7 @@ setInterval(function() {
                 calculator.setExpression({id: (i+maxTriangles).toString(), latex: uniqueCoords[i], showLabel: true});
             }
         }
+        //remove any verts that have disappeared from the screen (ex. if they are hidden behind a face on the cube)
         if(prevNumLabeledVerts - numLabeledVerts > 0)
         {
             for(let i = 0; i < prevNumLabeledVerts - numLabeledVerts; i++)
@@ -295,6 +332,7 @@ setInterval(function() {
     }
     else
     {
+        //when the label verts button is unchecked, hide all of the verts
         for(let i = 0; i < numLabeledVerts; i++)
         {
             calculator.setExpression({id: (i+maxTriangles).toString(), latex: '(-10, 0)', color:'#000000'});
