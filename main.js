@@ -3,7 +3,7 @@ var elt = document.getElementById('calculator');
 var calculator = Desmos.GraphingCalculator(elt);
 
 //other vars lol
-const maxTriangles = 64; //increasing this will slow the calculator down (a lot)
+const maxTriangles = 32; //increasing this will slow the calculator down (a lot)
 const ScreenHeight = 20.0;
 const ScreenWidth = 20.0;
 const FrameDelay = 0.01; //seconds
@@ -66,36 +66,7 @@ matProj.m[3][3] = 0.0;
 //cube:
 var meshCube = new mesh();
 let meshcubeobj = "# Blender v3.0.1 OBJ File: ''\n# www.blender.org\nmtllib model.mtl\no Cube\nv 1.000000 1.000000 -1.000000\nv 1.000000 -1.000000 -1.000000\nv 1.000000 1.000000 1.000000\nv 1.000000 -1.000000 1.000000\nv -1.000000 1.000000 -1.000000\nv -1.000000 -1.000000 -1.000000\nv -1.000000 1.000000 1.000000\nv -1.000000 -1.000000 1.000000\nf 5 3 1\nf 3 8 4\nf 7 6 8\nf 2 8 6\nf 1 4 2\nf 5 2 6\nf 5 7 3\nf 3 7 8\nf 7 5 6\nf 2 4 8\nf 1 3 4\nf 5 1 2";
-
-
-/*
-//south
-meshCube.tris.push(GetTriangle([0.0, 0.0, 0.0], [0.0, 1.0, 0.0], [1.0, 1.0, 0.0]));
-meshCube.tris.push(GetTriangle([0.0, 0.0, 0.0], [1.0, 1.0, 0.0], [1.0, 0.0, 0.0]));
-
-//east
-meshCube.tris.push(GetTriangle([1.0, 0.0, 0.0], [1.0, 1.0, 0.0], [1.0, 1.0, 1.0]));
-meshCube.tris.push(GetTriangle([1.0, 0.0, 0.0], [1.0, 1.0, 1.0], [1.0, 0.0, 1.0]));
-
-//north
-meshCube.tris.push(GetTriangle([1.0, 0.0, 1.0], [1.0, 1.0, 1.0], [0.0, 1.0, 1.0]));
-meshCube.tris.push(GetTriangle([1.0, 0.0, 1.0], [0.0, 1.0, 1.0], [0.0, 0.0, 1.0]));
-
-//west
-meshCube.tris.push(GetTriangle([0.0, 0.0, 1.0], [0.0, 1.0, 1.0], [0.0, 1.0, 0.0]));
-meshCube.tris.push(GetTriangle([0.0, 0.0, 1.0], [0.0, 1.0, 0.0], [0.0, 0.0, 0.0]));
-
-//top
-meshCube.tris.push(GetTriangle([0.0, 1.0, 0.0], [0.0, 1.0, 1.0], [1.0, 1.0, 1.0]));
-meshCube.tris.push(GetTriangle([0.0, 1.0, 0.0], [1.0, 1.0, 1.0], [1.0, 1.0, 0.0]));
-
-//bottom
-meshCube.tris.push(GetTriangle([1.0, 0.0, 1.0], [0.0, 0.0, 1.0], [0.0, 0.0, 0.0]));
-meshCube.tris.push(GetTriangle([1.0, 0.0, 1.0], [0.0, 0.0, 0.0], [1.0, 0.0, 0.0]));
-*/
-
 meshCube = GetMeshFromOBJ(meshcubeobj);
-console.log(meshCube);
 
 //returns latex of a triangle
 function GetTriangleLatex(x1, y1, x2, y2, x3, y3)
@@ -163,7 +134,6 @@ function GetMeshFromOBJ(objStr)
         }
         else if (objLine[0] == 'f')
         {
-            console.log(verts[objLine[2]])
             faces.push(GetTriangle(verts[objLine[1] - 1], verts[objLine[2] - 1], verts[objLine[3] - 1]));
         }
     }
@@ -183,6 +153,8 @@ light_direction.x /= len; light_direction.y /= len; light_direction.z /= len;
 let numLabeledVerts = 0;
 let prevNumLabeledVerts = 0;
 
+let hasReadFile = false;
+
 //main loop
 setInterval(function() {
     //----HTML UPDATE----
@@ -194,6 +166,24 @@ setInterval(function() {
 
     let labelVerts = document.getElementById('labelverts').checked;
     let labeledCoords = [];
+
+    //read upload file
+    var fileupload = document.getElementById("uploadfile");
+    fileupload.addEventListener('change',function() {
+        var fileReader=new FileReader();
+        fileReader.onload=function(){
+            if(!hasReadFile)
+            {
+                console.log(meshCube.tris);
+                console.log("owo");
+                hasReadFile = true;
+                meshCube = GetMeshFromOBJ(fileReader.result.toString());
+                console.log(meshCube.tris);
+            }
+        }
+        fileReader.readAsText(this.files[0]);
+    })
+    
 
     //----RENDER----
     //update variables
@@ -327,7 +317,6 @@ setInterval(function() {
                 calculator.setExpression({id: (i+maxTriangles+numLabeledVerts).toString(), latex: '(-10, 0)', color:'#000000'});
             }
         }
-        console.log(numLabeledVerts - prevNumLabeledVerts);
         prevNumLabeledVerts = numLabeledVerts;
     }
     else
