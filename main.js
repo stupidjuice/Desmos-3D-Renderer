@@ -3,7 +3,7 @@ var elt = document.getElementById('calculator');
 var calculator = Desmos.GraphingCalculator(elt);
 
 //other vars lol
-const maxTriangles = 32; //increasing this will slow the calculator down (a lot)
+const maxTriangles = 64; //increasing this will slow the calculator down (a lot)
 const ScreenHeight = 20.0;
 const ScreenWidth = 20.0;
 const FrameDelay = 0.01; //seconds
@@ -209,6 +209,10 @@ setInterval(function() {
 	matRotX.m[2][2] = Math.cos(ElapsedTime * 0.5 * TimeScale);
 	matRotX.m[3][3] = 1;
 
+    //triangles to sort later
+    let vecTrianglesToRaster = [];
+    let indicesToDraw = [];
+
     for(let i = 0; i < meshCube.tris.length; i++)
     {
         //a bunch of triangles that will be used for each transformation/projection
@@ -279,6 +283,8 @@ setInterval(function() {
 	        triProjected.p[2].x *= 0.5 * ScreenWidth;
 	        triProjected.p[2].y *= 0.5 * ScreenHeight;
 
+            triProjected.col = brightnessRGB
+
             //if the label vertices button is pressed, add the triangles' points to this array
             if(labelVerts)
             {
@@ -287,8 +293,9 @@ setInterval(function() {
                 labeledCoords.push('(' + triProjected.p[2].x.toString() + ', ' + triProjected.p[2].y.toString() + ')');
             }
         
-            //Draw the thing
-            calculator.setExpression({id: i.toString(), latex: GetTriangleLatex(triProjected.p[0].x, triProjected.p[0].y, triProjected.p[1].x, triProjected.p[1].y, triProjected.p[2].x, triProjected.p[2].y), color: '#' + brightnessRGB, fillOpacity: opacity/100, lineWidth: lineThickness});
+            //Add triangle to list to be sorted and then drawn
+            vecTrianglesToRaster.push(triProjected);
+            indicesToDraw.push(i);
         }
         //if the face is not facing the camera, make it a black dot thats off the screen so its not in the way
         else
@@ -296,6 +303,24 @@ setInterval(function() {
             calculator.setExpression({id: i.toString(), latex: '(-10, 0)', color:'#000000'}); 
         }
     }
+
+    /*
+    vecTrianglesToRaster.sort(function(t1, t2)
+    {
+        z1 = (t1.p[0].z + t1.p[1].z + t1.p[2].z) / 3.0;
+        z2 = (t2.p[0].z + t2.p[1].z + t2.p[2].z) / 3.0;
+        return z1 > z2;
+    });
+    */
+   vecTrianglesToRaster.sort((t1, t2) => (((t1.p[0].z + t1.p[1].z + t1.p[2].z) / 3.0) > ((t2.p[0].z + t2.p[1].z + t2.p[2].z) / 3.0)) ? -1 : 1);
+
+    console.log(vecTrianglesToRaster)
+
+    for(let i = 0; i < vecTrianglesToRaster.length; i++)
+    {
+        calculator.setExpression({id: indicesToDraw[i], latex: GetTriangleLatex(vecTrianglesToRaster[i].p[0].x, vecTrianglesToRaster[i].p[0].y, vecTrianglesToRaster[i].p[1].x, vecTrianglesToRaster[i].p[1].y, vecTrianglesToRaster[i].p[2].x, vecTrianglesToRaster[i].p[2].y), color: '#' + vecTrianglesToRaster[i].col, fillOpacity: opacity/100, lineWidth: lineThickness});
+    }
+
     if(labelVerts)
     {
         //use this hack to remove duplicates from the array of vertices

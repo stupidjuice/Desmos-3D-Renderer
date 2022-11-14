@@ -6,6 +6,8 @@
 
 The file upload at the bottom of the web page allows you to upload custom .obj files to render.
 When exporting the .obj file from Blender (I recommend exporting from Blender), you must unselect everything from the geometry tab except "Triangulate Faces"
+The maximum amount of triangles in a model is 64 (otherwise, the renderer will be EXTREMELY slow)
+\
 \
 ![export](images/export.png)
 
