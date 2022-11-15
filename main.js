@@ -9,7 +9,7 @@ const ScreenWidth = 20.0;
 const FrameDelay = 0.01; //seconds
 
 //render vars
-var ElapsedTime = 0.0;
+let ElapsedTime = 0.0;
 const minBrightness = 10;
 
 class mat4x4
@@ -48,13 +48,13 @@ class mesh
 }
 
 //projection matrix
-var fNear = 0.1;
-var fFar = 1000.0;
-var fFov = 90.0;
-var fAspectRatio = ScreenHeight / ScreenWidth;
-var fFovRad = 1.0 / Math.tan(fFov * 0.5 / 180.0 * Math.PI);
+let fNear = 0.1;
+let fFar = 1000.0;
+let fFov = 90.0;
+let fAspectRatio = ScreenHeight / ScreenWidth;
+let fFovRad = 1.0 / Math.tan(fFov * 0.5 / 180.0 * Math.PI);
 
-var matProj = new mat4x4();
+let matProj = new mat4x4();
 
 matProj.m[0][0] = fAspectRatio * fFovRad;
 matProj.m[1][1] = fFovRad;
@@ -64,7 +64,7 @@ matProj.m[2][3] = 1.0;
 matProj.m[3][3] = 0.0;
 
 //cube:
-var meshCube = new mesh();
+let meshCube = new mesh();
 let meshcubeobj = "# Blender v3.0.1 OBJ File: ''\n# www.blender.org\nmtllib model.mtl\no Cube\nv 1.000000 1.000000 -1.000000\nv 1.000000 -1.000000 -1.000000\nv 1.000000 1.000000 1.000000\nv 1.000000 -1.000000 1.000000\nv -1.000000 1.000000 -1.000000\nv -1.000000 -1.000000 -1.000000\nv -1.000000 1.000000 1.000000\nv -1.000000 -1.000000 1.000000\nf 5 3 1\nf 3 8 4\nf 7 6 8\nf 2 8 6\nf 1 4 2\nf 5 2 6\nf 5 7 3\nf 3 7 8\nf 7 5 6\nf 2 4 8\nf 1 3 4\nf 5 1 2";
 meshCube = GetMeshFromOBJ(meshcubeobj);
 
@@ -144,8 +144,8 @@ function GetMeshFromOBJ(objStr)
 
 //---------------------------------------ACTUAL RENDERING CODE---------------------------------------
 Initialize();
-var vCamera = new vector3()
-var light_direction = new vector3(-1.0, 0.5, -1.0)
+let vCamera = new vector3()
+let light_direction = new vector3(-1.0, 0.5, -1.0)
 //normalize light direction (or else the lighting will be extremely overdone)
 let len = Math.sqrt(light_direction.x * light_direction.x + light_direction.y * light_direction.y + light_direction.z * light_direction.z);
 light_direction.x /= len; light_direction.y /= len; light_direction.z /= len;
@@ -188,10 +188,10 @@ setInterval(function() {
     //----RENDER----
     //update variables
     ElapsedTime += FrameDelay;
-    let TimeScale = 1;
+    let TimeScale = 3;
 
-    var matRotZ = new mat4x4();
-    var matRotX = new mat4x4();
+    let matRotZ = new mat4x4();
+    let matRotX = new mat4x4();
 
 	//rotation Z
 	matRotZ.m[0][0] = Math.cos(ElapsedTime * TimeScale);
@@ -264,8 +264,8 @@ setInterval(function() {
         if(normal.x * (triTranslated.p[0].x - vCamera.x) + normal.y * (triTranslated.p[0].y - vCamera.y) + normal.z * (triTranslated.p[0].z - vCamera.z) < 0.0)
 		{
             //lighting
-            let brightness = Math.round((normal.x * light_direction.x + normal.y * light_direction.y + normal.z * light_direction.z) * 150 + minBrightness);
-            let brightnessRGB = Math.min((brightness << 16) + (brightness << 8) + brightness, 16777215).toString(16);
+            let brightness = Math.max(Math.min(Math.round((normal.x * light_direction.x + normal.y * light_direction.y + normal.z * light_direction.z) * 150 + minBrightness), 255), 0);
+            let brightnessRGB = ((brightness << 16) + (brightness << 8) + brightness).toString(16);
 
             //project
             triProjected.p[0] = MultiplyMatrixVector(triRotatedZX.p[0], matProj);
@@ -283,8 +283,6 @@ setInterval(function() {
 	        triProjected.p[2].x *= 0.5 * ScreenWidth;
 	        triProjected.p[2].y *= 0.5 * ScreenHeight;
 
-            triProjected.col = brightnessRGB
-
             //if the label vertices button is pressed, add the triangles' points to this array
             if(labelVerts)
             {
@@ -294,6 +292,7 @@ setInterval(function() {
             }
         
             //Add triangle to list to be sorted and then drawn
+            triProjected.col = brightnessRGB;
             vecTrianglesToRaster.push(triProjected);
             indicesToDraw.push(i);
         }
@@ -304,21 +303,14 @@ setInterval(function() {
         }
     }
 
-    /*
-    vecTrianglesToRaster.sort(function(t1, t2)
-    {
-        z1 = (t1.p[0].z + t1.p[1].z + t1.p[2].z) / 3.0;
-        z2 = (t2.p[0].z + t2.p[1].z + t2.p[2].z) / 3.0;
-        return z1 > z2;
-    });
-    */
-   vecTrianglesToRaster.sort((t1, t2) => (((t1.p[0].z + t1.p[1].z + t1.p[2].z) / 3.0) > ((t2.p[0].z + t2.p[1].z + t2.p[2].z) / 3.0)) ? -1 : 1);
+    //for some reason, sorting makes the lighting break. (FIX ME) maybe use this idk https://stackoverflow.com/questions/11499268/sort-two-arrays-the-same-way
+    vecTrianglesToRaster.sort((t1, t2) => (((t1.p[0].z + t1.p[1].z + t1.p[2].z) / 3.0) > ((t2.p[0].z + t2.p[1].z + t2.p[2].z) / 3.0)) ? -1 : 1);
 
     console.log(vecTrianglesToRaster)
 
     for(let i = 0; i < vecTrianglesToRaster.length; i++)
     {
-        calculator.setExpression({id: indicesToDraw[i], latex: GetTriangleLatex(vecTrianglesToRaster[i].p[0].x, vecTrianglesToRaster[i].p[0].y, vecTrianglesToRaster[i].p[1].x, vecTrianglesToRaster[i].p[1].y, vecTrianglesToRaster[i].p[2].x, vecTrianglesToRaster[i].p[2].y), color: '#' + vecTrianglesToRaster[i].col, fillOpacity: opacity/100, lineWidth: lineThickness});
+        calculator.setExpression({id: indicesToDraw[i], latex: GetTriangleLatex(vecTrianglesToRaster[i].p[0].x, vecTrianglesToRaster[i].p[0].y, vecTrianglesToRaster[i].p[1].x, vecTrianglesToRaster[i].p[1].y, vecTrianglesToRaster[i].p[2].x, vecTrianglesToRaster[i].p[2].y), color: '#' + vecTrianglesToRaster[i].col, fillOpacity: opacity / 100, lineWidth: lineThickness});
     }
 
     if(labelVerts)

@@ -4,6 +4,11 @@
     src: url(PressStart2P.ttf);
 }
 
+body
+{
+    background-color: #B2B2AE;
+}
+
 .toptext 
 {
     font-size: xx-large;
