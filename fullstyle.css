@@ -1,0 +1,27 @@
+html, body 
+{ 
+    height: 100%; width: 100%; margin: 0; 
+}
+
+.calculator
+{
+    position: absolute;
+    margin: 0px;
+    padding: 0px;
+    top: 0px;
+    bottom:0px;
+    left: 0px;
+    right: 0px;
+    width: 100%;
+    height: 100%;
+}
+
+.bottompage
+{
+    bottom: 0px;
+    position: absolute;
+    left: 100px;
+    padding: 0px;
+    margin: 0px;
+    color: black;
+}
