@@ -3,7 +3,7 @@ var elt = document.getElementById('calculator');
 var calculator = Desmos.GraphingCalculator(elt);
 
 //other vars lol
-const maxTriangles = 64; //increasing this will slow the calculator down (a lot)
+let maxTriangles = 512; //increasing this will slow the calculator down (a lot)
 const ScreenHeight = 20.0;
 const ScreenWidth = 20.0;
 const FrameDelay = 0.01; //seconds
@@ -78,7 +78,7 @@ function GetTriangleLatex(x1, y1, x2, y2, x3, y3)
 //creates a bunch of points to use later    
 function Initialize()
 {
-    for(let i = 0; i < maxTriangles << 1; i++)
+    for(let i = 0; i < maxTriangles; i++)
     {
         calculator.setExpression({id: i.toString(), latex: '(-10, 0)', color:'#000000'});    
     }
@@ -213,7 +213,6 @@ setInterval(function() {
     //triangles to sort later
     let vecTrianglesToRaster = [];
     let indicesToDraw = [];
-    let previousIndicies = [];
 
     for(let i = 0; i < meshCube.tris.length; i++)
     {
