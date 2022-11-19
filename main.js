@@ -36,6 +36,7 @@ class triangle
     {
         this.p = [p1,  p2, p3];
         this.col = '#FF0000';    
+        this.distanceToCam = 0.0;
     }
 }
 
@@ -193,25 +194,26 @@ setInterval(function() {
     let matRotZ = new mat4x4();
     let matRotX = new mat4x4();
 
-	//rotation Z
-	matRotZ.m[0][0] = Math.cos(ElapsedTime * TimeScale);
-	matRotZ.m[0][1] = Math.sin(ElapsedTime * TimeScale);
-	matRotZ.m[1][0] = -Math.sin(ElapsedTime * TimeScale);
-	matRotZ.m[1][1] = Math.cos(ElapsedTime * TimeScale);
-	matRotZ.m[2][2] = 1;
-	matRotZ.m[3][3] = 1;
+    //rotation Z
+    matRotZ.m[0][0] = Math.cos(ElapsedTime * TimeScale);
+    matRotZ.m[0][1] = Math.sin(ElapsedTime * TimeScale);
+    matRotZ.m[1][0] = -Math.sin(ElapsedTime * TimeScale);
+    matRotZ.m[1][1] = Math.cos(ElapsedTime * TimeScale);
+    matRotZ.m[2][2] = 1;
+    matRotZ.m[3][3] = 1;
 
-	//rotation X
-	matRotX.m[0][0] = 1;
-	matRotX.m[1][1] = Math.cos(ElapsedTime * 0.5 * TimeScale);
-	matRotX.m[1][2] = Math.sin(ElapsedTime * 0.5 * TimeScale);
-	matRotX.m[2][1] = -Math.sin(ElapsedTime * 0.5 * TimeScale);
-	matRotX.m[2][2] = Math.cos(ElapsedTime * 0.5 * TimeScale);
-	matRotX.m[3][3] = 1;
+    //rotation X
+    matRotX.m[0][0] = 1;
+    matRotX.m[1][1] = Math.cos(ElapsedTime * 0.5 * TimeScale);
+    matRotX.m[1][2] = Math.sin(ElapsedTime * 0.5 * TimeScale);
+    matRotX.m[2][1] = -Math.sin(ElapsedTime * 0.5 * TimeScale);
+    matRotX.m[2][2] = Math.cos(ElapsedTime * 0.5 * TimeScale);
+    matRotX.m[3][3] = 1;
 
     //triangles to sort later
     let vecTrianglesToRaster = [];
     let indicesToDraw = [];
+    let previousIndicies = [];
 
     for(let i = 0; i < meshCube.tris.length; i++)
     {
@@ -223,15 +225,15 @@ setInterval(function() {
         let triRotatedZX = new triangle();
 
         //rotate z
-		triRotatedZ.p[0] = MultiplyMatrixVector(tri.p[0], matRotZ);
-		triRotatedZ.p[1] = MultiplyMatrixVector(tri.p[1], matRotZ);
-		triRotatedZ.p[2] = MultiplyMatrixVector(tri.p[2], matRotZ);
+        triRotatedZ.p[0] = MultiplyMatrixVector(tri.p[0], matRotZ);
+        triRotatedZ.p[1] = MultiplyMatrixVector(tri.p[1], matRotZ);
+        triRotatedZ.p[2] = MultiplyMatrixVector(tri.p[2], matRotZ);
 
-		//rotate x
+        //rotate x
         triRotatedZX = JSON.parse(JSON.stringify(triRotatedZ));
-		triRotatedZX.p[0] = MultiplyMatrixVector(triRotatedZ.p[0], matRotX);
-		triRotatedZX.p[1] = MultiplyMatrixVector(triRotatedZ.p[1], matRotX);
-		triRotatedZX.p[2] = MultiplyMatrixVector(triRotatedZ.p[2], matRotX);
+        triRotatedZX.p[0] = MultiplyMatrixVector(triRotatedZ.p[0], matRotX);
+        triRotatedZX.p[1] = MultiplyMatrixVector(triRotatedZ.p[1], matRotX);
+        triRotatedZX.p[2] = MultiplyMatrixVector(triRotatedZ.p[2], matRotX);
 
         //translate forward away from camera
         triTranslated = triRotatedZX;
@@ -245,27 +247,28 @@ setInterval(function() {
         let line2 = new vector3();
 
         line1.x = triTranslated.p[1].x - triTranslated.p[0].x;
-		line1.y = triTranslated.p[1].y - triTranslated.p[0].y;
-		line1.z = triTranslated.p[1].z - triTranslated.p[0].z;
+        line1.y = triTranslated.p[1].y - triTranslated.p[0].y;
+        line1.z = triTranslated.p[1].z - triTranslated.p[0].z;
 
-		line2.x = triTranslated.p[2].x - triTranslated.p[0].x;
-		line2.y = triTranslated.p[2].y - triTranslated.p[0].y;
-		line2.z = triTranslated.p[2].z - triTranslated.p[0].z;
+        line2.x = triTranslated.p[2].x - triTranslated.p[0].x;
+        line2.y = triTranslated.p[2].y - triTranslated.p[0].y;
+        line2.z = triTranslated.p[2].z - triTranslated.p[0].z;
 
         normal.x = line1.y * line2.z - line1.z * line2.y;
-		normal.y = line1.z * line2.x - line1.x * line2.z;
-		normal.z = line1.x * line2.y - line1.y * line2.x;
+        normal.y = line1.z * line2.x - line1.x * line2.z;
+        normal.z = line1.x * line2.y - line1.y * line2.x;
 
         //normalize normal (hehe)
         let len = Math.sqrt(normal.x * normal.x  +  normal.y * normal.y  +  normal.z * normal.z);
-		normal.x /= len; normal.y /= len; normal.z /= len;  
+        normal.x /= len; normal.y /= len; normal.z /= len;  
 
         //only project and draw triangle if it is facing camera
         if(normal.x * (triTranslated.p[0].x - vCamera.x) + normal.y * (triTranslated.p[0].y - vCamera.y) + normal.z * (triTranslated.p[0].z - vCamera.z) < 0.0)
-		{
+        {
             //lighting
-            let brightness = Math.max(Math.min(Math.round((normal.x * light_direction.x + normal.y * light_direction.y + normal.z * light_direction.z) * 150 + minBrightness), 255), 0);
-            let brightnessRGB = ((brightness << 16) + (brightness << 8) + brightness).toString(16);
+            let brightness = Math.min(Math.max(Math.round((normal.x * light_direction.x + normal.y * light_direction.y + normal.z * light_direction.z) * 150), 0) + minBrightness, 255).toString(16);;
+            let brightnessRGB = (brightness.length == 1 ? "0" + brightness : brightness);
+            brightnessRGB = '#' + brightnessRGB + brightnessRGB + brightnessRGB;
 
             //project
             triProjected.p[0] = MultiplyMatrixVector(triRotatedZX.p[0], matProj);
@@ -274,14 +277,14 @@ setInterval(function() {
             
             //bring the cube into the screen
             triProjected.p[0].x += 1.0; triProjected.p[0].y += 1.0;
-	        triProjected.p[1].x += 1.0; triProjected.p[1].y += 1.0;
-	        triProjected.p[2].x += 1.0; triProjected.p[2].y += 1.0;
-	        triProjected.p[0].x *= 0.5 * ScreenWidth;
-	        triProjected.p[0].y *= 0.5 * ScreenHeight;
-	        triProjected.p[1].x *= 0.5 * ScreenWidth;
-	        triProjected.p[1].y *= 0.5 * ScreenHeight;
-	        triProjected.p[2].x *= 0.5 * ScreenWidth;
-	        triProjected.p[2].y *= 0.5 * ScreenHeight;
+            triProjected.p[1].x += 1.0; triProjected.p[1].y += 1.0;
+            triProjected.p[2].x += 1.0; triProjected.p[2].y += 1.0;
+            triProjected.p[0].x *= 0.5 * ScreenWidth;
+            triProjected.p[0].y *= 0.5 * ScreenHeight;
+            triProjected.p[1].x *= 0.5 * ScreenWidth;
+            triProjected.p[1].y *= 0.5 * ScreenHeight;
+            triProjected.p[2].x *= 0.5 * ScreenWidth;
+            triProjected.p[2].y *= 0.5 * ScreenHeight;
 
             //if the label vertices button is pressed, add the triangles' points to this array
             if(labelVerts)
@@ -293,6 +296,7 @@ setInterval(function() {
         
             //Add triangle to list to be sorted and then drawn
             triProjected.col = brightnessRGB;
+            triProjected.distanceToCam = ((triProjected.p[0].z + triProjected.p[1].z + triProjected.p[2].z) / 3.0)
             vecTrianglesToRaster.push(triProjected);
             indicesToDraw.push(i);
         }
@@ -302,15 +306,13 @@ setInterval(function() {
             calculator.setExpression({id: i.toString(), latex: '(-10, 0)', color:'#000000'}); 
         }
     }
-
-    //for some reason, sorting makes the lighting break. (FIX ME) maybe use this idk https://stackoverflow.com/questions/11499268/sort-two-arrays-the-same-way
-    vecTrianglesToRaster.sort((t1, t2) => (((t1.p[0].z + t1.p[1].z + t1.p[2].z) / 3.0) > ((t2.p[0].z + t2.p[1].z + t2.p[2].z) / 3.0)) ? -1 : 1);
-
-    console.log(vecTrianglesToRaster)
-
+    
+    //for some reason, sorting makes the lighting break. (FIX ME)
+    vecTrianglesToRaster.sort((t1, t2) => ( t1.distanceToCam > t2.distanceToCam ? -1 : 1));
+    
     for(let i = 0; i < vecTrianglesToRaster.length; i++)
     {
-        calculator.setExpression({id: indicesToDraw[i], latex: GetTriangleLatex(vecTrianglesToRaster[i].p[0].x, vecTrianglesToRaster[i].p[0].y, vecTrianglesToRaster[i].p[1].x, vecTrianglesToRaster[i].p[1].y, vecTrianglesToRaster[i].p[2].x, vecTrianglesToRaster[i].p[2].y), color: '#' + vecTrianglesToRaster[i].col, fillOpacity: opacity / 100, lineWidth: lineThickness});
+        calculator.setExpression({id: indicesToDraw[i], latex: GetTriangleLatex(vecTrianglesToRaster[i].p[0].x, vecTrianglesToRaster[i].p[0].y, vecTrianglesToRaster[i].p[1].x, vecTrianglesToRaster[i].p[1].y, vecTrianglesToRaster[i].p[2].x, vecTrianglesToRaster[i].p[2].y), color: vecTrianglesToRaster[i].col, fillOpacity: opacity / 100, lineWidth: lineThickness});
     }
 
     if(labelVerts)
