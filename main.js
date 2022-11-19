@@ -3,7 +3,6 @@ var elt = document.getElementById('calculator');
 var calculator = Desmos.GraphingCalculator(elt);
 
 //other vars lol
-let maxTriangles = 512; //increasing this will slow the calculator down (a lot)
 const ScreenHeight = 20.0;
 const ScreenWidth = 20.0;
 const FrameDelay = 0.01; //seconds
@@ -75,15 +74,6 @@ function GetTriangleLatex(x1, y1, x2, y2, x3, y3)
     return '\\polygon((' + x1.toString() + ', ' + y1.toString() + '), (' + x2.toString() + ', ' + y2.toString() + '), (' + x3.toString() + ', ' + y3.toString() + '))';
 }
 
-//creates a bunch of points to use later    
-function Initialize()
-{
-    for(let i = 0; i < maxTriangles; i++)
-    {
-        calculator.setExpression({id: i.toString(), latex: '(-10, 0)', color:'#000000'});    
-    }
-}
-
 /**
  * @param {vector3} i vector3 to be multiplied
  * @param {vector3} o vector3 output
@@ -144,7 +134,6 @@ function GetMeshFromOBJ(objStr)
 }
 
 //---------------------------------------ACTUAL RENDERING CODE---------------------------------------
-Initialize();
 let vCamera = new vector3()
 let light_direction = new vector3(-1.0, 0.5, -1.0)
 //normalize light direction (or else the lighting will be extremely overdone)
@@ -184,7 +173,6 @@ setInterval(function() {
         }
         fileReader.readAsText(this.files[0]);
     })
-    
 
     //----RENDER----
     //update variables
@@ -324,7 +312,7 @@ setInterval(function() {
         {
             if(i < uniqueCoords.length)
             {
-                calculator.setExpression({id: (i+maxTriangles).toString(), latex: uniqueCoords[i], showLabel: true});
+                calculator.setExpression({id: 'vertlabel' + (i).toString(), latex: uniqueCoords[i], showLabel: true});
             }
         }
         //remove any verts that have disappeared from the screen (ex. if they are hidden behind a face on the cube)
@@ -332,7 +320,7 @@ setInterval(function() {
         {
             for(let i = 0; i < prevNumLabeledVerts - numLabeledVerts; i++)
             {
-                calculator.setExpression({id: (i+maxTriangles+numLabeledVerts).toString(), latex: '(-10, 0)', color:'#000000'});
+                calculator.setExpression({id: 'vertlabel' + (i+numLabeledVerts).toString(), latex: '(-10, 0)', color:'#000000'});
             }
         }
         prevNumLabeledVerts = numLabeledVerts;
@@ -342,7 +330,7 @@ setInterval(function() {
         //when the label verts button is unchecked, hide all of the verts
         for(let i = 0; i < numLabeledVerts; i++)
         {
-            calculator.setExpression({id: (i+maxTriangles).toString(), latex: '(-10, 0)', color:'#000000'});
+            calculator.setExpression({id: 'vertlabel' + (i).toString(), latex: '(-10, 0)', color:'#000000'});
         }
         numLabeledVerts = 0;
     }
