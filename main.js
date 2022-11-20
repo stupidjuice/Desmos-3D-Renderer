@@ -12,9 +12,11 @@ let ElapsedTime = 0.0;
 const minBrightness = 10;
 
 //rotation
+//conversion between degrees and radians
 const Deg2Rad = Math.PI / 180;
 const Rad2Deg = 180 / Math.PI;
 const FullRotRad = 360 * Deg2Rad;
+
 let autoRotate = true;
 let modelRotX = 0;
 let modelRotY = 0;
@@ -72,9 +74,9 @@ matProj.m[3][2] = (-fFar * fNear) / (fFar - fNear);
 matProj.m[2][3] = 1.0;
 matProj.m[3][3] = 0.0;
 
-//cube:
+//cube
 let meshCube = new mesh();
-let meshcubeobj = "# Blender v3.0.1 OBJ File: ''\n# www.blender.org\nmtllib model.mtl\no Cube\nv 1.000000 1.000000 -1.000000\nv 1.000000 -1.000000 -1.000000\nv 1.000000 1.000000 1.000000\nv 1.000000 -1.000000 1.000000\nv -1.000000 1.000000 -1.000000\nv -1.000000 -1.000000 -1.000000\nv -1.000000 1.000000 1.000000\nv -1.000000 -1.000000 1.000000\nf 5 3 1\nf 3 8 4\nf 7 6 8\nf 2 8 6\nf 1 4 2\nf 5 2 6\nf 5 7 3\nf 3 7 8\nf 7 5 6\nf 2 4 8\nf 1 3 4\nf 5 1 2";
+let meshcubeobj = "v 1.000000 1.000000 -1.000000\nv 1.000000 -1.000000 -1.000000\nv 1.000000 1.000000 1.000000\nv 1.000000 -1.000000 1.000000\nv -1.000000 1.000000 -1.000000\nv -1.000000 -1.000000 -1.000000\nv -1.000000 1.000000 1.000000\nv -1.000000 -1.000000 1.000000\nf 5 3 1\nf 3 8 4\nf 7 6 8\nf 2 8 6\nf 1 4 2\nf 5 2 6\nf 5 7 3\nf 3 7 8\nf 7 5 6\nf 2 4 8\nf 1 3 4\nf 5 1 2";
 meshCube = GetMeshFromOBJ(meshcubeobj);
 
 //returns latex of a triangle
@@ -103,13 +105,6 @@ function MultiplyMatrixVector(i, m)
     return temp;
 }
 
-/**
- * 
- * @param {List} p1 
- * @param {List} p2 
- * @param {List} p3 
- * @returns 
- */
 function GetTriangle(p1, p2, p3)
 {
     return new triangle(new vector3(p1[0], p1[1], p1[2]), new vector3(p2[0], p2[1], p2[2]), new vector3(p3[0], p3[1], p3[2]));
@@ -142,6 +137,7 @@ function GetMeshFromOBJ(objStr)
     return returnmesh;
 }
 
+//adds text box into desmos
 function AddComment(id, comment)
 {
     let curState = calculator.getState();
@@ -151,6 +147,7 @@ function AddComment(id, comment)
 
 function Initialize()
 {
+    //adds sliders and text boxes so user can control it
     //options 
     AddComment('opt', '   ======DISPLAY OPTIONS======');
 
@@ -174,6 +171,9 @@ function Initialize()
 
     AddComment('zrot', '-------Z Rotation-------');
     calculator.setExpression({id: 'slid6', latex: 'l = 0', sliderBounds: { min: '0', max: '360' }});
+
+    AddComment('autorot', '=====Auto Rotate=====')
+    calculator.setExpression({id: 'slid7', latex: 'a = 1', sliderBounds: { min: '0', max: '1', step: '1' }});
 }
 
 //---------------------------------------ACTUAL RENDERING CODE---------------------------------------
@@ -218,12 +218,15 @@ setInterval(function() {
     ElapsedTime += FrameDelay;
     let TimeScale = 3;
 
+    //handle rotations
+    autoRotate = exprs[16].latex.split(' ')[2] == 1;
     if(autoRotate)
     {
         modelRotX += FrameDelay;
         modelRotY += FrameDelay;
         modelRotZ += FrameDelay;
 
+        //if rotation > 360 degrees, subtract 360 degrees so that it always stays between 0-360 degrees
         if(modelRotX > FullRotRad) { modelRotX -= FullRotRad } if(modelRotX < -FullRotRad) { modelRotX += FullRotRad }
         if(modelRotY > FullRotRad) { modelRotY -= FullRotRad } if(modelRotY < -FullRotRad) { modelRotY += FullRotRad }
         if(modelRotZ > FullRotRad) { modelRotZ -= FullRotRad } if(modelRotZ < -FullRotRad) { modelRotZ += FullRotRad }
@@ -234,12 +237,11 @@ setInterval(function() {
     }
     else
     {
+        //get rotation from sliders in desmos
         modelRotX = exprs[10].latex.split(' ')[2] * Deg2Rad;
         modelRotY = exprs[12].latex.split(' ')[2] * Deg2Rad;
         modelRotZ = exprs[14].latex.split(' ')[2] * Deg2Rad;
     }
-
-    console.log(modelRotY * Rad2Deg);
 
     let matRotZ = new mat4x4();
     let matRotY = new mat4x4();
@@ -295,10 +297,10 @@ setInterval(function() {
         triRotatedZY.p[2] = MultiplyMatrixVector(triRotatedZ.p[2], matRotY);
 
         //rotate x
-        triRotatedZYX = JSON.parse(JSON.stringify(triRotatedZ));
-        triRotatedZYX.p[0] = MultiplyMatrixVector(triRotatedZ.p[0], matRotX);
-        triRotatedZYX.p[1] = MultiplyMatrixVector(triRotatedZ.p[1], matRotX);
-        triRotatedZYX.p[2] = MultiplyMatrixVector(triRotatedZ.p[2], matRotX);
+        triRotatedZYX = JSON.parse(JSON.stringify(triRotatedZY));
+        triRotatedZYX.p[0] = MultiplyMatrixVector(triRotatedZY.p[0], matRotX);
+        triRotatedZYX.p[1] = MultiplyMatrixVector(triRotatedZY.p[1], matRotX);
+        triRotatedZYX.p[2] = MultiplyMatrixVector(triRotatedZY.p[2], matRotX);
 
         //translate forward away from camera
         triTranslated = JSON.parse(JSON.stringify(triRotatedZYX));
