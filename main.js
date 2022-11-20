@@ -11,6 +11,11 @@ const FrameDelay = 0.01; //seconds
 let ElapsedTime = 0.0;
 const minBrightness = 10;
 
+//rotation
+let modelRotX = 0;
+let modelRotY = 0;
+let modelRotZ = 0;
+
 class mat4x4
 {
     constructor()
@@ -147,6 +152,7 @@ let hasReadFile = false;
 
 //main loop
 setInterval(function() {
+    calculator.getExpressions();
     //----HTML UPDATE----
     let opacity = document.getElementById('opacity').value;
     document.getElementById('opacitytext').innerHTML = opacity.toString() + '%';
@@ -179,24 +185,35 @@ setInterval(function() {
     ElapsedTime += FrameDelay;
     let TimeScale = 3;
 
+    modelRotZ = TimeScale * ElapsedTime;
+
     let matRotZ = new mat4x4();
+    let matRotY = new mat4x4();
     let matRotX = new mat4x4();
 
     //rotation Z
-    matRotZ.m[0][0] = Math.cos(ElapsedTime * TimeScale);
-    matRotZ.m[0][1] = Math.sin(ElapsedTime * TimeScale);
-    matRotZ.m[1][0] = -Math.sin(ElapsedTime * TimeScale);
-    matRotZ.m[1][1] = Math.cos(ElapsedTime * TimeScale);
-    matRotZ.m[2][2] = 1;
-    matRotZ.m[3][3] = 1;
+    matRotZ.m[0][0] = Math.cos(modelRotZ);
+    matRotZ.m[0][1] = Math.sin(modelRotZ); 
+    matRotZ.m[1][0] = -Math.sin(modelRotZ);
+    matRotZ.m[1][1] = Math.cos(modelRotZ);
+    matRotZ.m[2][2] = 1.0;
+    matRotZ.m[3][3] = 1.0;
+
+    //rotation y
+    matRotY.m[0][0] = Math.cos(modelRotY)
+    matRotY.m[1][1] = 1.0;
+    matRotY.m[2][0] = Math.sin(modelRotY) 
+    matRotY.m[0][2] = -Math.sin(modelRotY)
+    matRotY.m[2][2] = Math.cos(modelRotY)
+    matRotY.m[3][3] = 1.0;
 
     //rotation X
-    matRotX.m[0][0] = 1;
-    matRotX.m[1][1] = Math.cos(ElapsedTime * 0.5 * TimeScale);
-    matRotX.m[1][2] = Math.sin(ElapsedTime * 0.5 * TimeScale);
-    matRotX.m[2][1] = -Math.sin(ElapsedTime * 0.5 * TimeScale);
-    matRotX.m[2][2] = Math.cos(ElapsedTime * 0.5 * TimeScale);
-    matRotX.m[3][3] = 1;
+    matRotX.m[0][0] = 1.0;
+    matRotX.m[1][1] = Math.cos(modelRotX);
+    matRotX.m[1][2] = Math.sin(modelRotX);
+    matRotX.m[2][1] = -Math.sin(modelRotX);
+    matRotX.m[2][2] = Math.cos(modelRotX);
+    matRotX.m[3][3] = 1.0;
 
     //triangles to sort later
     let vecTrianglesToRaster = [];
@@ -209,24 +226,31 @@ setInterval(function() {
         let triTranslated = new triangle();
         let triProjected = new triangle();
         let triRotatedZ = new triangle();
-        let triRotatedZX = new triangle();
+        let triRotatedZY = new triangle();
+        let triRotatedZYX = new triangle();
 
         //rotate z
         triRotatedZ.p[0] = MultiplyMatrixVector(tri.p[0], matRotZ);
         triRotatedZ.p[1] = MultiplyMatrixVector(tri.p[1], matRotZ);
         triRotatedZ.p[2] = MultiplyMatrixVector(tri.p[2], matRotZ);
+        
+        //rotate y
+        triRotatedZY = JSON.parse(JSON.stringify(triRotatedZ));
+        triRotatedZY.p[0] = MultiplyMatrixVector(triRotatedZ.p[0], matRotY);
+        triRotatedZY.p[1] = MultiplyMatrixVector(triRotatedZ.p[1], matRotY);
+        triRotatedZY.p[2] = MultiplyMatrixVector(triRotatedZ.p[2], matRotY);
 
         //rotate x
-        triRotatedZX = JSON.parse(JSON.stringify(triRotatedZ));
-        triRotatedZX.p[0] = MultiplyMatrixVector(triRotatedZ.p[0], matRotX);
-        triRotatedZX.p[1] = MultiplyMatrixVector(triRotatedZ.p[1], matRotX);
-        triRotatedZX.p[2] = MultiplyMatrixVector(triRotatedZ.p[2], matRotX);
+        triRotatedZYX = JSON.parse(JSON.stringify(triRotatedZY));
+        triRotatedZYX.p[0] = MultiplyMatrixVector(triRotatedZY.p[0], matRotX);
+        triRotatedZYX.p[1] = MultiplyMatrixVector(triRotatedZY.p[1], matRotX);
+        triRotatedZYX.p[2] = MultiplyMatrixVector(triRotatedZY.p[2], matRotX);
 
         //translate forward away from camera
-        triTranslated = triRotatedZX;
-        triTranslated.p[0].z = triRotatedZX.p[0].z + 3.0;
-        triTranslated.p[1].z = triRotatedZX.p[1].z + 3.0;
-        triTranslated.p[2].z = triRotatedZX.p[2].z + 3.0;
+        triTranslated = JSON.parse(JSON.stringify(triRotatedZYX));
+        triTranslated.p[0].z = triRotatedZYX.p[0].z + 3.0;
+        triTranslated.p[1].z = triRotatedZYX.p[1].z + 3.0;
+        triTranslated.p[2].z = triRotatedZYX.p[2].z + 3.0;
 
         //get normal using some weird math wizardry (wtf is a cross product?????)
         let normal = new vector3();
@@ -258,9 +282,9 @@ setInterval(function() {
             brightnessRGB = '#' + brightnessRGB + brightnessRGB + brightnessRGB;
 
             //project
-            triProjected.p[0] = MultiplyMatrixVector(triRotatedZX.p[0], matProj);
-            triProjected.p[1] = MultiplyMatrixVector(triRotatedZX.p[1], matProj);
-            triProjected.p[2] = MultiplyMatrixVector(triRotatedZX.p[2], matProj);
+            triProjected.p[0] = MultiplyMatrixVector(triTranslated.p[0], matProj);
+            triProjected.p[1] = MultiplyMatrixVector(triTranslated.p[1], matProj);
+            triProjected.p[2] = MultiplyMatrixVector(triTranslated.p[2], matProj);
             
             //bring the cube into the screen
             triProjected.p[0].x += 1.0; triProjected.p[0].y += 1.0;
