@@ -138,7 +138,31 @@ function GetMeshFromOBJ(objStr)
     return returnmesh;
 }
 
+function AddComment(id, comment)
+{
+    let curState = calculator.getState();
+    curState.expressions.list.push({id: id, type: 'text', text: comment})
+    calculator.setState(curState);
+}
+
+function Initialize()
+{
+    AddComment('opt', 'Options');
+
+    //sliders 
+    AddComment('slidnote1', 'Fill Opacity');
+
+    calculator.setExpression({id: 'slid1', latex: 'o = 100', sliderBounds: { min: '0', max: '100', step: '1' }});
+
+    AddComment('slidnote2', 'Line Thinckness')
+    calculator.setExpression({id: 'slid2', latex: 't = 1', sliderBounds: { min: '1', max: '10', step: '1' }});
+
+    AddComment('slidnote3', 'Label Verticies (0 = false, 1 = true)')
+    calculator.setExpression({id: 'slid3', latex: 'v = 0', sliderBounds: { min: '0', max: '1', step: '1' }});
+}
+
 //---------------------------------------ACTUAL RENDERING CODE---------------------------------------
+Initialize();
 let vCamera = new vector3()
 let light_direction = new vector3(-1.0, 0.5, -1.0)
 //normalize light direction (or else the lighting will be extremely overdone)
@@ -152,15 +176,13 @@ let hasReadFile = false;
 
 //main loop
 setInterval(function() {
-    calculator.getExpressions();
+    let exprs = calculator.getExpressions();
+    console.log(exprs)
     //----HTML UPDATE----
-    let opacity = document.getElementById('opacity').value;
-    document.getElementById('opacitytext').innerHTML = opacity.toString() + '%';
+    let opacity = exprs[3].latex.split(' ')[2];
+    let lineThickness = exprs[5].latex.split(' ')[2];
+    let labelVerts = exprs[7].latex.split(' ')[2] == 1;
 
-    let lineThickness = document.getElementById('linethick').value;
-    document.getElementById('linethicktext').innerHTML = lineThickness.toString() + ' pixels'; 
-
-    let labelVerts = document.getElementById('labelverts').checked;
     let labeledCoords = [];
 
     //read upload file
