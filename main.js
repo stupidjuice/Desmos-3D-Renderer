@@ -12,6 +12,10 @@ let ElapsedTime = 0.0;
 const minBrightness = 10;
 
 //rotation
+const Deg2Rad = Math.PI / 180;
+const Rad2Deg = 180 / Math.PI;
+const FullRotRad = 360 * Deg2Rad;
+let autoRotate = true;
 let modelRotX = 0;
 let modelRotY = 0;
 let modelRotZ = 0;
@@ -88,14 +92,14 @@ function MultiplyMatrixVector(i, m)
 {
     temp = new vector3();
     temp.x = i.x * m.m[0][0] + i.y * m.m[1][0] + i.z * m.m[2][0] + m.m[3][0];
-	temp.y = i.x * m.m[0][1] + i.y * m.m[1][1] + i.z * m.m[2][1] + m.m[3][1];
-	temp.z = i.x * m.m[0][2] + i.y * m.m[1][2] + i.z * m.m[2][2] + m.m[3][2];
-	w =      i.x * m.m[0][3] + i.y * m.m[1][3] + i.z * m.m[2][3] + m.m[3][3];
+    temp.y = i.x * m.m[0][1] + i.y * m.m[1][1] + i.z * m.m[2][1] + m.m[3][1];
+    temp.z = i.x * m.m[0][2] + i.y * m.m[1][2] + i.z * m.m[2][2] + m.m[3][2];
+    w =      i.x * m.m[0][3] + i.y * m.m[1][3] + i.z * m.m[2][3] + m.m[3][3];
 
-	if (w != 0.0)
-	{
-		temp.x /= w; temp.y /= w; temp.z /= w;
-	}
+    if (w != 0.0)
+    {
+        temp.x /= w; temp.y /= w; temp.z /= w;
+    }
     return temp;
 }
 
@@ -147,18 +151,29 @@ function AddComment(id, comment)
 
 function Initialize()
 {
-    AddComment('opt', 'Options');
+    //options 
+    AddComment('opt', '   ======DISPLAY OPTIONS======');
 
-    //sliders 
-    AddComment('slidnote1', 'Fill Opacity');
-
+    AddComment('opacity', '-------Fill Opacity-------');
     calculator.setExpression({id: 'slid1', latex: 'o = 100', sliderBounds: { min: '0', max: '100', step: '1' }});
 
-    AddComment('slidnote2', 'Line Thinckness')
+    AddComment('thickness', '-------Line Thinckness-------')
     calculator.setExpression({id: 'slid2', latex: 't = 1', sliderBounds: { min: '1', max: '10', step: '1' }});
 
-    AddComment('slidnote3', 'Label Verticies (0 = false, 1 = true)')
+    AddComment('labelvert', '-------Label Verticies (0 = false, 1 = true)-------')
     calculator.setExpression({id: 'slid3', latex: 'v = 0', sliderBounds: { min: '0', max: '1', step: '1' }});
+
+    //rotation
+    AddComment('rotopt', '======ROTATION======');
+
+    AddComment('xrot', '-------X Rotation-------');
+    calculator.setExpression({id: 'slid4', latex: 'j = 0', sliderBounds: { min: '0', max: '360' }});
+
+    AddComment('yrot', '-------Y Rotation-------');
+    calculator.setExpression({id: 'slid5', latex: 'k = 0', sliderBounds: { min: '0', max: '360' }});
+
+    AddComment('zrot', '-------Z Rotation-------');
+    calculator.setExpression({id: 'slid6', latex: 'l = 0', sliderBounds: { min: '0', max: '360' }});
 }
 
 //---------------------------------------ACTUAL RENDERING CODE---------------------------------------
@@ -177,7 +192,6 @@ let hasReadFile = false;
 //main loop
 setInterval(function() {
     let exprs = calculator.getExpressions();
-    console.log(exprs)
     //----HTML UPDATE----
     let opacity = exprs[3].latex.split(' ')[2];
     let lineThickness = exprs[5].latex.split(' ')[2];
@@ -192,11 +206,8 @@ setInterval(function() {
         fileReader.onload=function(){
             if(!hasReadFile)
             {
-                console.log(meshCube.tris);
-                console.log("owo");
                 hasReadFile = true;
                 meshCube = GetMeshFromOBJ(fileReader.result.toString());
-                console.log(meshCube.tris);
             }
         }
         fileReader.readAsText(this.files[0]);
@@ -207,7 +218,28 @@ setInterval(function() {
     ElapsedTime += FrameDelay;
     let TimeScale = 3;
 
-    modelRotZ = TimeScale * ElapsedTime;
+    if(autoRotate)
+    {
+        modelRotX += FrameDelay;
+        modelRotY += FrameDelay;
+        modelRotZ += FrameDelay;
+
+        if(modelRotX > FullRotRad) { modelRotX -= FullRotRad } if(modelRotX < -FullRotRad) { modelRotX += FullRotRad }
+        if(modelRotY > FullRotRad) { modelRotY -= FullRotRad } if(modelRotY < -FullRotRad) { modelRotY += FullRotRad }
+        if(modelRotZ > FullRotRad) { modelRotZ -= FullRotRad } if(modelRotZ < -FullRotRad) { modelRotZ += FullRotRad }
+
+        calculator.setExpression({id: 'slid4', latex: 'j = ' + modelRotX * Rad2Deg});
+        calculator.setExpression({id: 'slid5', latex: 'k = ' + modelRotX * Rad2Deg});
+        calculator.setExpression({id: 'slid6', latex: 'l = ' + modelRotX * Rad2Deg});
+    }
+    else
+    {
+        modelRotX = exprs[10].latex.split(' ')[2] * Deg2Rad;
+        modelRotY = exprs[12].latex.split(' ')[2] * Deg2Rad;
+        modelRotZ = exprs[14].latex.split(' ')[2] * Deg2Rad;
+    }
+
+    console.log(modelRotY * Rad2Deg);
 
     let matRotZ = new mat4x4();
     let matRotY = new mat4x4();
@@ -263,16 +295,16 @@ setInterval(function() {
         triRotatedZY.p[2] = MultiplyMatrixVector(triRotatedZ.p[2], matRotY);
 
         //rotate x
-        triRotatedZYX = JSON.parse(JSON.stringify(triRotatedZY));
-        triRotatedZYX.p[0] = MultiplyMatrixVector(triRotatedZY.p[0], matRotX);
-        triRotatedZYX.p[1] = MultiplyMatrixVector(triRotatedZY.p[1], matRotX);
-        triRotatedZYX.p[2] = MultiplyMatrixVector(triRotatedZY.p[2], matRotX);
+        triRotatedZYX = JSON.parse(JSON.stringify(triRotatedZ));
+        triRotatedZYX.p[0] = MultiplyMatrixVector(triRotatedZ.p[0], matRotX);
+        triRotatedZYX.p[1] = MultiplyMatrixVector(triRotatedZ.p[1], matRotX);
+        triRotatedZYX.p[2] = MultiplyMatrixVector(triRotatedZ.p[2], matRotX);
 
         //translate forward away from camera
         triTranslated = JSON.parse(JSON.stringify(triRotatedZYX));
-        triTranslated.p[0].z = triRotatedZYX.p[0].z + 3.0;
-        triTranslated.p[1].z = triRotatedZYX.p[1].z + 3.0;
-        triTranslated.p[2].z = triRotatedZYX.p[2].z + 3.0;
+        triTranslated.p[0].z = triRotatedZYX.p[0].z + 5.0;
+        triTranslated.p[1].z = triRotatedZYX.p[1].z + 5.0;
+        triTranslated.p[2].z = triRotatedZYX.p[2].z + 5.0;
 
         //get normal using some weird math wizardry (wtf is a cross product?????)
         let normal = new vector3();
@@ -340,7 +372,6 @@ setInterval(function() {
         }
     }
     
-    //for some reason, sorting makes the lighting break. (FIX ME)
     vecTrianglesToRaster.sort((t1, t2) => ( t1.distanceToCam > t2.distanceToCam ? -1 : 1));
     
     for(let i = 0; i < vecTrianglesToRaster.length; i++)
