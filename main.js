@@ -154,32 +154,35 @@ function Initialize()
     AddComment('opacity', '-------Fill Opacity-------');
     calculator.setExpression({id: 'slid1', latex: 'o = 100', sliderBounds: { min: '0', max: '100', step: '1' }});
 
-    AddComment('thickness', '-------Line Thinckness-------')
+    AddComment('thickness', '-------Line Thinckness-------');
     calculator.setExpression({id: 'slid2', latex: 't = 1', sliderBounds: { min: '1', max: '10', step: '1' }});
 
     AddComment('labelvert', '-------Label Verticies (0 = false, 1 = true)-------')
     calculator.setExpression({id: 'slid3', latex: 'v = 0', sliderBounds: { min: '0', max: '1', step: '1' }});
 
+    AddComment('backcull', '-------Backface Culling-------');
+    calculator.setExpression({id: 'slid4', latex: 'b = 1', sliderBounds: { min: '0', max: '1', step: '1' }});
+
     //rotation
     AddComment('rotopt', '======ROTATION======');
 
     AddComment('xrot', '-------X Rotation-------');
-    calculator.setExpression({id: 'slid4', latex: 'j = 0', sliderBounds: { min: '0', max: '360' }});
+    calculator.setExpression({id: 'slid5', latex: 'j = 0', sliderBounds: { min: '0', max: '360' }});
 
     AddComment('yrot', '-------Y Rotation-------');
-    calculator.setExpression({id: 'slid5', latex: 'k = 0', sliderBounds: { min: '0', max: '360' }});
+    calculator.setExpression({id: 'slid6', latex: 'k = 0', sliderBounds: { min: '0', max: '360' }});
 
     AddComment('zrot', '-------Z Rotation-------');
-    calculator.setExpression({id: 'slid6', latex: 'l = 0', sliderBounds: { min: '0', max: '360' }});
+    calculator.setExpression({id: 'slid7', latex: 'l = 0', sliderBounds: { min: '0', max: '360' }});
 
-    AddComment('autorot', '=====Auto Rotate=====')
-    calculator.setExpression({id: 'slid7', latex: 'a = 1', sliderBounds: { min: '0', max: '1', step: '1' }});
+    AddComment('autorot', '=====Auto Rotate=====');
+    calculator.setExpression({id: 'slid8', latex: 'a = 1', sliderBounds: { min: '0', max: '1', step: '1' }});
 }
 
 //---------------------------------------ACTUAL RENDERING CODE---------------------------------------
 Initialize();
-let vCamera = new vector3()
-let light_direction = new vector3(-1.0, 0.5, -1.0)
+let vCamera = new vector3();
+let light_direction = new vector3(-1.0, 0.5, -1.0);
 //normalize light direction (or else the lighting will be extremely overdone)
 let len = Math.sqrt(light_direction.x * light_direction.x + light_direction.y * light_direction.y + light_direction.z * light_direction.z);
 light_direction.x /= len; light_direction.y /= len; light_direction.z /= len;
@@ -196,6 +199,7 @@ setInterval(function() {
     let opacity = exprs[3].latex.split(' ')[2];
     let lineThickness = exprs[5].latex.split(' ')[2];
     let labelVerts = exprs[7].latex.split(' ')[2] == 1;
+    let backfaceCulling = exprs[9].latex.split(' ')[2] == 1;
 
     let labeledCoords = [];
 
@@ -219,7 +223,7 @@ setInterval(function() {
     let TimeScale = 3;
 
     //handle rotations
-    autoRotate = exprs[16].latex.split(' ')[2] == 1;
+    autoRotate = exprs[18].latex.split(' ')[2] == 1;
     if(autoRotate)
     {
         modelRotX += FrameDelay;
@@ -231,16 +235,16 @@ setInterval(function() {
         if(modelRotY > FullRotRad) { modelRotY -= FullRotRad } if(modelRotY < -FullRotRad) { modelRotY += FullRotRad }
         if(modelRotZ > FullRotRad) { modelRotZ -= FullRotRad } if(modelRotZ < -FullRotRad) { modelRotZ += FullRotRad }
 
-        calculator.setExpression({id: 'slid4', latex: 'j = ' + modelRotX * Rad2Deg});
-        calculator.setExpression({id: 'slid5', latex: 'k = ' + modelRotX * Rad2Deg});
-        calculator.setExpression({id: 'slid6', latex: 'l = ' + modelRotX * Rad2Deg});
+        calculator.setExpression({id: 'slid5', latex: 'j = ' + modelRotX * Rad2Deg});
+        calculator.setExpression({id: 'slid6', latex: 'k = ' + modelRotX * Rad2Deg});
+        calculator.setExpression({id: 'slid7', latex: 'l = ' + modelRotX * Rad2Deg});
     }
     else
     {
         //get rotation from sliders in desmos
-        modelRotX = exprs[10].latex.split(' ')[2] * Deg2Rad;
-        modelRotY = exprs[12].latex.split(' ')[2] * Deg2Rad;
-        modelRotZ = exprs[14].latex.split(' ')[2] * Deg2Rad;
+        modelRotX = exprs[12].latex.split(' ')[2] * Deg2Rad;
+        modelRotY = exprs[14].latex.split(' ')[2] * Deg2Rad;
+        modelRotZ = exprs[16].latex.split(' ')[2] * Deg2Rad;
     }
 
     let matRotZ = new mat4x4();
@@ -330,7 +334,7 @@ setInterval(function() {
         normal.x /= len; normal.y /= len; normal.z /= len;  
 
         //only project and draw triangle if it is facing camera
-        if(normal.x * (triTranslated.p[0].x - vCamera.x) + normal.y * (triTranslated.p[0].y - vCamera.y) + normal.z * (triTranslated.p[0].z - vCamera.z) < 0.0)
+        if(normal.x * (triTranslated.p[0].x - vCamera.x) + normal.y * (triTranslated.p[0].y - vCamera.y) + normal.z * (triTranslated.p[0].z - vCamera.z) < 0.0 || !backfaceCulling)
         {
             //lighting
             let brightness = Math.min(Math.max(Math.round((normal.x * light_direction.x + normal.y * light_direction.y + normal.z * light_direction.z) * 150), 0) + minBrightness, 255).toString(16);;
@@ -374,6 +378,7 @@ setInterval(function() {
         }
     }
     
+    //TURN INTO FUNCTION EXPRESSION LATER
     vecTrianglesToRaster.sort((t1, t2) => ( t1.distanceToCam > t2.distanceToCam ? -1 : 1));
     
     for(let i = 0; i < vecTrianglesToRaster.length; i++)
