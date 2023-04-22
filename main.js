@@ -82,7 +82,7 @@ meshCube = GetMeshFromOBJ(meshcubeobj);
 //returns latex of a triangle
 function GetTriangleLatex(x1, y1, x2, y2, x3, y3)
 {
-    return '\\polygon((' + x1.toString() + ', ' + y1.toString() + '), (' + x2.toString() + ', ' + y2.toString() + '), (' + x3.toString() + ', ' + y3.toString() + '))';
+    return '\\operatorname{polygon}((' + x1.toString() + ', ' + y1.toString() + '), (' + x2.toString() + ', ' + y2.toString() + '), (' + x3.toString() + ', ' + y3.toString() + '))';
 }
 
 /**
